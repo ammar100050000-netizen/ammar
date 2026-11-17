@@ -11,7 +11,7 @@ import android.webkit.WebResourceError;
 import android.webkit.JavascriptInterface;
 import android.graphics.Color;
 public class MainActivity extends Activity {
- private static final String SITE="https://ammar100050000-netizen.github.io/ammar/nabdh-net/";
+ private static final String SITE="https://raw.githack.com/ammar100050000-netizen/ammar/main/nabdh-net/index.html";
  private static final String APK="https://github.com/ammar100050000-netizen/ammar/releases/latest/download/NabdhNet_MAX_ULTRA.apk";
  WebView web; boolean fallback=false;
  @Override public void onCreate(Bundle b){super.onCreate(b);getWindow().setStatusBarColor(Color.rgb(4,15,26));
@@ -23,10 +23,10 @@ public class MainActivity extends Activity {
        if(r.isForMainFrame()&&!fallback){fallback=true;v.loadUrl("file:///android_asset/index.html");}
      }
      @Override public boolean shouldOverrideUrlLoading(WebView v,WebResourceRequest r){
-       Uri u=r.getUrl();String h=u.getHost();if("ammar100050000-netizen.github.io".equals(h))return false;
+       Uri u=r.getUrl();String h=u.getHost();if("raw.githack.com".equals(h))return false;
        try{startActivity(new Intent(Intent.ACTION_VIEW,u));}catch(Exception ignored){}return true;
      }
-   });web.loadUrl(SITE);
+   });web.loadUrl(SITE+"?t="+System.currentTimeMillis());
  }
  public class Bridge {
    @JavascriptInterface public void start(){runOnUiThread(()->{
