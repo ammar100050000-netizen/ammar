@@ -1,6 +1,9 @@
 {
+  "app": "Nabdh Net MAX ULTRA",
   "versionCode": 18,
   "versionName": "18",
-  "apkUrl": "",
-  "status": "pending_apk_upload"
+  "apkUrl": "https://github.com/ammar100050000-netizen/ammar/releases/latest/download/NabdhNet_MAX_ULTRA.apk",
+  "releasePage": "https://github.com/ammar100050000-netizen/ammar/releases/latest",
+  "status": "awaiting_release",
+  "updatedAt": "2026-11-17"
 }
