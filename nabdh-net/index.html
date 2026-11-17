@@ -472,7 +472,12 @@ async function update(){
   if(!raw.ok)throw Error('تعذّر تنزيل التصميم: '+raw.status);
   var html=await raw.text();
   if(html.length<400000||html.indexOf('id="globe"')<0||html.indexOf('id="tenGrid"')<0||html.indexOf('nabdh-nexus-v28')<0||html.indexOf('nb-restore-update-script')<0)throw Error('التصميم غير مكتمل');
-  try{sessionStorage.setItem('nb_ui_applied_sha',sha.substring(0,10))}catch(_){}
+  try{
+    localStorage.setItem('nb_ui_cached_html_v1',html);
+    localStorage.setItem('nb_ui_cached_sha_v1',sha);
+    sessionStorage.setItem('nb_ui_applied_sha',sha.substring(0,10));
+  }catch(e){status('تنبيه: تعذّر حفظ التصميم على الجهاز، تحديث ملف التطبيق مطلوب')}
+
   document.open();document.write(html);document.close();
  }catch(e){status('خطأ بالتحديث: '+String(e.message||e))}
  finally{busy=false;if(btn&&btn.isConnected)btn.disabled=false}
