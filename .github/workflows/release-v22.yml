@@ -26,7 +26,7 @@ jobs:
           TOOLS="$(find "${ANDROID_HOME:-/usr/local/lib/android/sdk}/build-tools" -mindepth 2 -maxdepth 2 -type f -name apksigner | sort -V | tail -1)"
           test -n "$TOOLS"
           "$TOOLS" verify --verbose --print-certs --min-sdk-version 26 NabdhNet_MAX_ULTRA.apk | tee signature_report.txt
-          grep -qi "Signer #1 certificate SHA-256 digest: 11b838bc93f964a150c76f81d58407a5373b1ea51c861fb5b5ed05a54e931997" signature_report.txt
+          grep -qi "V2 Signer: certificate SHA-256 digest: 11b838bc93f964a150c76f81d58407a5373b1ea51c861fb5b5ed05a54e931997" signature_report.txt
           "${TOOLS%/*}/zipalign" -c -v 4 NabdhNet_MAX_ULTRA.apk
       - name: Publish validated APK
         uses: softprops/action-gh-release@v2
