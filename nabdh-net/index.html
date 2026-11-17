@@ -211,7 +211,7 @@ const q=id=>document.getElementById(id);
 const modes=[...document.querySelectorAll('.mode')];
 let displayUnit='MB/s';
 const unitMB=q('unitMB'),unitMb=q('unitMb');
-function changeUnit(v){displayUnit=v;q('unit').textContent=v;unitMB.classList.toggle('chosen',v==='MB/s');unitMb.classList.toggle('chosen',v==='Mbps');q('speed').textContent=(v==='Mbps'?peak:peak/8).toFixed(2);try{localStorage.setItem('nb_unit',v)}catch(e){}}
+function changeUnit(v){displayUnit=v;q('unit').textContent=v;unitMB.classList.toggle('chosen',v==='MB/s');unitMb.classList.toggle('chosen',v==='Mbps');q('speed').textContent=(v==='Mbps'?(Number.parseFloat(q('peak').textContent)||0):(Number.parseFloat(q('peak').textContent)||0)/8).toFixed(2);try{localStorage.setItem('nb_unit',v)}catch(e){}}
 unitMB.addEventListener('click',()=>changeUnit('MB/s'));unitMb.addEventListener('click',()=>changeUnit('Mbps'));try{changeUnit(localStorage.getItem('nb_unit')==='Mbps'?'Mbps':'MB/s')}catch(e){}
 const historyKey='nb_lifetime_v5';let history={bytes:0,ms:0,sessions:0,peak:0},histPrevTotal=0,histPrevMs=0,histRunning=false;
 try{const saved=JSON.parse(localStorage.getItem(historyKey)||'{}');for(const k of Object.keys(history))if(Number.isFinite(saved[k])&&saved[k]>=0)history[k]=saved[k]}catch(e){}
