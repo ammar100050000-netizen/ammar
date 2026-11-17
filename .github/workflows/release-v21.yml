@@ -1,31 +1,43 @@
-name: Publish Nabdh Net PULSE ONE V21
+name: Validate and publish Nabdh Net PULSE ONE v21
 on:
   push:
     paths:
-      - 'release/v21.apk.b64'
+      - 'release-payload/v21-apk.b64'
       - '.github/workflows/release-v21.yml'
   workflow_dispatch:
 permissions:
   contents: write
 jobs:
-  release:
+  validate-release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Decode verified signed native Android update
-        shell: bash
+      - name: Decode and verify exact signed APK
         run: |
-          mkdir -p dist
-          base64 -d release/v21.apk.b64 > dist/NabdhNet_MAX_ULTRA.apk
-          echo '7ce131106d6711b7122109004ba4d00f741059932fbb423fc3c218cec2b970bc  dist/NabdhNet_MAX_ULTRA.apk' | sha256sum -c -
-          unzip -t dist/NabdhNet_MAX_ULTRA.apk | tail -n 1
-      - name: Publish public one-tap update release
+          base64 -d release-payload/v21-apk.b64 > NabdhNet_MAX_ULTRA.apk
+          printf '%s  %s\n' '68ac4deecbdac2541d5f6e3a5756de91c71c06c5d821fa851a862702855c9b6d' 'NabdhNet_MAX_ULTRA.apk' | sha256sum -c -
+          unzip -t NabdhNet_MAX_ULTRA.apk | tail -n 1
+      - name: Validate Android v2 signature, package and version
+        run: |
+          set -euxo pipefail
+          APKSIGNER=$(find "${ANDROID_HOME}/build-tools" -type f -name apksigner | sort -V | tail -1)
+          test -n "$APKSIGNER"
+          "$APKSIGNER" verify --verbose --print-certs NabdhNet_MAX_ULTRA.apk
+          AAPT=$(find "${ANDROID_HOME}/build-tools" -type f -name aapt | sort -V | tail -1)
+          test -n "$AAPT"
+          "$AAPT" dump badging NabdhNet_MAX_ULTRA.apk | head -n 6
+      - name: Publish public one-click update release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v21
           name: نبض نت • PULSE ONE V21
-          body: 'واجهة جديدة بالكامل، قياس مباشر بمحرك V20 الأصلي، وسجل القياس محفوظ عند التحديث من V20 بنفس توقيع التطبيق.'
-          files: dist/NabdhNet_MAX_ULTRA.apk
+          body: |
+            Upgrade to PULSE ONE with the existing v20 signing certificate and same Android package.
+            Do not uninstall v20: preserve existing on-device measurement history.
+            Android will still request user confirmation to install this one-time app update.
+            Later interface updates are delivered directly from GitHub through the in-app update button.
+          files: NabdhNet_MAX_ULTRA.apk
+          fail_on_unmatched_files: true
           prerelease: false
           draft: false
           make_latest: true
