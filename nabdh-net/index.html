@@ -345,11 +345,24 @@ window.nbUpdate=function(raw){if(typeof old==='function')old(raw);if(!running||t
 <script id="nb-restore-update-script">(function(){'use strict';
 var btn=document.getElementById('nb-restore-update-button'),out=document.getElementById('nb-restore-update-status');
 var URL='https://raw.githubusercontent.com/ammar100050000-netizen/ammar/main/nabdh-net/index.html';
-btn.addEventListener('click',async function(){if(btn.disabled)return;btn.disabled=true;out.textContent='جاري فحص التحديث...';
-try{var r=await fetch(URL+'?refresh='+Date.now(),{cache:'no-store'});if(!r.ok)throw Error('HTTP '+r.status);
-var html=await r.text();if(html.length<400000||!html.includes('data-nabdh-interface="1"')||!html.includes('window.nbUpdate')||!html.includes('id="globe"'))throw Error('ملف التحديث غير مكتمل');
-if(window.__nbRemoteHtmlVersion==='v23-restore'){out.textContent='✓ الواجهة الأصلية محدّثة بالفعل';return}
-window.__nbRemoteHtmlVersion='v23-restore';out.textContent='✓ تم التحديث';document.open();document.write(html);document.close();
-}catch(e){out.textContent='تعذّر التحديث: '+String(e.message||e)}finally{btn.disabled=false}});
-window.__nbRemoteHtmlVersion='v23-restore';
+var VERSION='v24-live-swap';
+var busy=false;
+function message(t){if(out)out.textContent=t}
+async function updateNow(){
+ if(busy)return;busy=true;if(btn)btn.disabled=true;message('جاري تطبيق التحديث مباشرة...');
+ try{
+  var r=await fetch(URL+'?refresh='+Date.now(),{cache:'no-store',redirect:'follow'});
+  if(!r.ok)throw Error('HTTP '+r.status);
+  var html=await r.text();
+  if(html.length<400000||!html.includes('data-nabdh-interface="1"')||!html.includes('window.nbUpdate')||!html.includes('id="globe"'))throw Error('ملف التحديث غير مكتمل');
+  if(window.__nbRemoteHtmlVersion===VERSION){message('✓ أحدث تصميم يعمل الآن');return}
+  var oldScroll=window.scrollY||0;
+  try{sessionStorage.setItem('nb_scroll_restore',String(oldScroll))}catch(_){}
+  document.open();document.write(html);document.close();
+ }catch(e){message('تعذّر التحديث: '+String(e.message||e))}
+ finally{busy=false;if(btn)btn.disabled=false}
+}
+if(btn)btn.addEventListener('click',updateNow);
+window.__nbRemoteHtmlVersion=VERSION;
+try{var y=Number(sessionStorage.getItem('nb_scroll_restore')||0);if(y>0){sessionStorage.removeItem('nb_scroll_restore');requestAnimationFrame(function(){window.scrollTo(0,y)})}}catch(_){}
 })();</script></body></html>
