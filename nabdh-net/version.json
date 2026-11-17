@@ -1,10 +1,16 @@
 {
-  "app": "Nabdh Net MAX ULTRA",
-  "versionCode": 19,
-  "versionName": "19",
-  "apkUrl": "https://github.com/ammar100050000-netizen/ammar/releases/download/v19/NabdhNet_MAX_ULTRA.apk",
-  "releasePage": "https://github.com/ammar100050000-netizen/ammar/releases/tag/v19",
-  "webUrl": "https://raw.githack.com/ammar100050000-netizen/ammar/main/nabdh-net/index.html",
+  "app": "Nabdh Net PULSE ONE",
+  "versionCode": 21,
+  "versionName": "21",
+  "apkUrl": "https://github.com/ammar100050000-netizen/ammar/releases/download/v21/NabdhNet_MAX_ULTRA.apk",
+  "releasePage": "https://github.com/ammar100050000-netizen/ammar/releases/tag/v21",
+  "webUrl": "https://raw.githubusercontent.com/ammar100050000-netizen/ammar/main/nabdh-net/index.html",
   "status": "available",
-  "updatedAt": "2026-11-17"
+  "updatedAt": "2026-11-17",
+  "features": [
+    "minimal-ui",
+    "native-speed-engine-preserved",
+    "v20-signature-compatible",
+    "in-app-ui-refresh"
+  ]
 }
