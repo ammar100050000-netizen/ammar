@@ -1,0 +1,31 @@
+name: Publish Nabdh Net PULSE ONE V21
+on:
+  push:
+    paths:
+      - 'release/v21.apk.b64'
+      - '.github/workflows/release-v21.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode verified signed native Android update
+        shell: bash
+        run: |
+          mkdir -p dist
+          base64 -d release/v21.apk.b64 > dist/NabdhNet_MAX_ULTRA.apk
+          echo '7ce131106d6711b7122109004ba4d00f741059932fbb423fc3c218cec2b970bc  dist/NabdhNet_MAX_ULTRA.apk' | sha256sum -c -
+          unzip -t dist/NabdhNet_MAX_ULTRA.apk | tail -n 1
+      - name: Publish public one-tap update release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v21
+          name: نبض نت • PULSE ONE V21
+          body: 'واجهة جديدة بالكامل، قياس مباشر بمحرك V20 الأصلي، وسجل القياس محفوظ عند التحديث من V20 بنفس توقيع التطبيق.'
+          files: dist/NabdhNet_MAX_ULTRA.apk
+          prerelease: false
+          draft: false
+          make_latest: true
