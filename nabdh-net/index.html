@@ -68,44 +68,6 @@ body.tenMode #detailsPage{display:none}
 .detailHost{background:#0d1930;border:1px solid rgba(111,175,228,.2);border-radius:15px;padding:14px;margin:14px 0;color:#b8e8fa}
 .detailHost h3{margin:0 0 9px;color:#f3faff;font-size:16px}
 #detailsPage .stats,#detailsPage .lifetime,#detailsPage .toolbox{margin-bottom:16px}
-</style><!-- NABDH SIGNATURE DESIGN V25 -->
-<style id="nabdh-signature-v25">
-:root{--cyan:#b8ff42;--soft:#a0aec1;--line:rgba(185,255,72,.17);--glass:#101521}
-html{background:#070a11}
-body{background:radial-gradient(ellipse 90% 35% at 50% -10%,#253c2b 0,transparent 80%),linear-gradient(160deg,#090d15,#06080e 70%);color:#f4f7f0}
-.app{max-width:620px}
-.top{border-bottom:1px solid #b8ff4230;padding-bottom:20px}
-.logo{background:#b8ff42;color:#0b1110;border:1px solid #dfff94;box-shadow:0 0 25px #b8ff4235;transform:rotate(-8deg);border-radius:14px}
-.brand strong{font-weight:900;letter-spacing:-1.2px}
-.brand small{color:#a6b8a1}
-.badge{color:#b8ff42;border:1px solid #b8ff4270;background:#b8ff420e;letter-spacing:1.6px}
-.eyebrow{color:#a5c873}
-.headline{font-weight:900;letter-spacing:-1.2px}
-.subtitle{color:#9eacb0}
-.statusbar{background:#111822;border:1px solid #b8ff4230;border-radius:11px}
-.dot.live{background:#b8ff42;box-shadow:0 0 0 4px #b8ff421c,0 0 14px #b8ff42}
-.panel{background:linear-gradient(155deg,#172119,#10151f 52%,#0b1018);border:1px solid #b8ff4252;border-radius:17px 47px 17px 47px;box-shadow:inset 0 1px #b8ff4230,0 25px 55px #000a;isolation:isolate}
-.panel:before{background:radial-gradient(circle,#b8ff4220,transparent 66%)}
-.panel:after{content:"N / N";position:absolute;top:47px;left:-18px;transform:rotate(-90deg);font:800 10px/1 monospace;letter-spacing:4px;color:#b8ff4255;pointer-events:none}
-.panelHead{color:#bdcbb3}
-.panelHead b{color:#b8ff42}
-.speedwrap{filter:drop-shadow(0 0 22px #b8ff4218)}
-.track{stroke:#293a2b}
-.progress{stroke:#b8ff42;filter:drop-shadow(0 0 7px #b8ff4280)}
-.ticks{stroke:#68864d}
-.center{background:radial-gradient(circle at 30% 24%,#263c28,#101a1d 63%,#0b121b);border:1px solid #b8ff425c;box-shadow:0 0 0 9px #b8ff4207,0 0 35px #b8ff4215,inset 0 0 28px #b8ff4210}
-.v{font-weight:750;letter-spacing:-4px;color:#eaffcd;text-shadow:0 0 30px #b8ff4230}
-.metric{color:#b8ff42;letter-spacing:2px}
-.metriccard{background:#121b20;border:1px solid #b8ff422b;border-radius:12px}
-.metriccard strong{color:#e7fbd4}
-.sectionTitle{color:#f4f8f2}
-.start,#tenToggle{background:linear-gradient(120deg,#caff65,#92d52d)!important;color:#11190a!important;border:0!important;border-radius:13px!important;box-shadow:0 12px 32px #b8ff4220;font-weight:900!important}
-button.selected,.mode.selected,.unitBtn.chosen{border-color:#b8ff42!important;color:#b8ff42!important}
-.nb-restore-update{background:linear-gradient(140deg,#1b281c,#101722)!important;border-color:#b8ff4266!important;border-radius:15px!important}
-.nb-restore-update button{background:#b8ff42!important;color:#0b1409!important;border:0!important;font-weight:900!important}
-.nb-restore-update small{color:#a9bba1!important}
-@media(max-width:370px){.panel{padding:17px 12px}.brand strong{font-size:20px}.v{font-size:clamp(45px,11vw,64px)}}
-@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
 </style><style id="nabdh-atelier-v26">
 :root{--cyan:#83e8e3;--soft:#94a6b8;--line:rgba(132,232,227,.13)}
 body{background:radial-gradient(ellipse 80% 28% at 50% -7%,#12313b 0%,transparent 78%),#070b12!important;color:#f3f7fb}
@@ -407,28 +369,35 @@ window.nbUpdate=function(raw){if(typeof old==='function')old(raw);if(!running||t
 .nb-restore-update button{display:block;width:100%;border:1px solid #2b9cc0;border-radius:13px;padding:16px;color:#a8f5ff;background:#123750;font-size:17px;font-weight:800}
 .nb-restore-update small{display:block;margin-top:10px;color:#9bb6c9;font-size:12px}
 </style>
-<div class="nb-restore-update"><button id="nb-restore-update-button" type="button">🔄 تحديث نبض نت</button><small id="nb-restore-update-status">كل الميزات الأصلية محفوظة • تحديث التصميم من GitHub</small></div>
-<script id="nb-restore-update-script">(function(){'use strict';
-var btn=document.getElementById('nb-restore-update-button'),out=document.getElementById('nb-restore-update-status');
-var URL='https://raw.githubusercontent.com/ammar100050000-netizen/ammar/main/nabdh-net/index.html';
-var VERSION='v27-force-refresh';
+<div class="nb-restore-update"><button id="nb-restore-update-button" type="button">🔄 تحديث نبض نت</button><small id="nb-restore-update-status">تحديث مباشر عبر إصدار GitHub المثبّت</small></div>
+<script id="nb-restore-update-script">(function(){
+'use strict';
+var btn=document.getElementById('nb-restore-update-button');
+var out=document.getElementById('nb-restore-update-status');
+var endpoint='https://api.github.com/repos/ammar100050000-netizen/ammar/commits?path=nabdh-net/index.html&per_page=1';
+var base='https://raw.githubusercontent.com/ammar100050000-netizen/ammar/';
+var path='nabdh-net/index.html';
 var busy=false;
-function message(t){if(out)out.textContent=t}
-async function updateNow(){
- if(busy)return;busy=true;if(btn)btn.disabled=true;message('جاري تطبيق التحديث مباشرة...');
+var status=function(v){if(out)out.textContent=v};
+async function update(){
+ if(busy)return;
+ busy=true;if(btn)btn.disabled=true;
+ status('جاري جلب أحدث تصميم...');
  try{
-  var r=await fetch(URL+'?refresh='+Date.now(),{cache:'no-store',redirect:'follow'});
-  if(!r.ok)throw Error('HTTP '+r.status);
-  var html=await r.text();
-  if(html.length<400000||!html.includes('data-nabdh-interface="1"')||!html.includes('window.nbUpdate')||!html.includes('id="globe"'))throw Error('ملف التحديث غير مكتمل');
-  // Always apply fetched markup: remote design can change without changing VERSION.
-  var oldScroll=window.scrollY||0;
-  try{sessionStorage.setItem('nb_scroll_restore',String(oldScroll))}catch(_){}
+  var commitResp=await fetch(endpoint+'&t='+Date.now(),{cache:'no-store'});
+  if(!commitResp.ok)throw Error('تعذّر جلب الإصدار: '+commitResp.status);
+  var commits=await commitResp.json();
+  var sha=commits&&commits[0]&&commits[0].sha;
+  if(!/^[0-9a-f]{40}$/.test(sha||''))throw Error('معرّف الإصدار غير صالح');
+  var raw=await fetch(base+sha+'/'+path+'?r='+Date.now(),{cache:'no-store'});
+  if(!raw.ok)throw Error('تعذّر تنزيل التصميم: '+raw.status);
+  var html=await raw.text();
+  if(html.length<400000||html.indexOf('id="globe"')<0||html.indexOf('id="tenGrid"')<0||html.indexOf('nabdh-atelier-v26')<0||html.indexOf('nb-restore-update-script')<0)throw Error('التصميم غير مكتمل');
+  try{sessionStorage.setItem('nb_ui_applied_sha',sha.substring(0,10))}catch(_){}
   document.open();document.write(html);document.close();
- }catch(e){message('تعذّر التحديث: '+String(e.message||e))}
- finally{busy=false;if(btn)btn.disabled=false}
+ }catch(e){status('خطأ بالتحديث: '+String(e.message||e))}
+ finally{busy=false;if(btn&&btn.isConnected)btn.disabled=false}
 }
-if(btn)btn.addEventListener('click',updateNow);
-window.__nbRemoteHtmlVersion=VERSION;
-try{var y=Number(sessionStorage.getItem('nb_scroll_restore')||0);if(y>0){sessionStorage.removeItem('nb_scroll_restore');requestAnimationFrame(function(){window.scrollTo(0,y)})}}catch(_){}
+if(btn)btn.addEventListener('click',update);
+try{var applied=sessionStorage.getItem('nb_ui_applied_sha');if(applied){status('✓ التصميم مُطبّق • '+applied);sessionStorage.removeItem('nb_ui_applied_sha')}}catch(_){}
 })();</script></body></html>
