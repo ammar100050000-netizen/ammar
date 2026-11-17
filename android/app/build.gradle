@@ -2,6 +2,6 @@ plugins { id 'com.android.application' }
 android {
   namespace 'com.nabdh.max'
   compileSdk 35
-  defaultConfig { applicationId 'com.nabdh.max'; minSdk 26; targetSdk 35; versionCode 19; versionName '19' }
+  defaultConfig { applicationId 'com.nabdh.max'; minSdk 26; targetSdk 35; versionCode 27; versionName '27' }
   buildTypes { release { minifyEnabled false } }
 }
