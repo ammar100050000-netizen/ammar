@@ -1,6 +1,6 @@
 {
   "app": "Nabdh Net PULSE ONE",
-  "versionCode": 22,
+  "versionCode": 21,
   "versionName": "22",
   "apkUrl": "https://github.com/ammar100050000-netizen/ammar/releases/download/v22/NabdhNet_MAX_ULTRA.apk",
   "releasePage": "https://github.com/ammar100050000-netizen/ammar/releases/tag/v22",
@@ -13,5 +13,7 @@
     "v20-signature-compatible",
     "in-app-ui-refresh",
     "aligned-apk-repair"
-  ]
+  ],
+  "uiVersion": "v23-restore",
+  "note": "Keep installed V22 from redirecting to APK when checking UI updates"
 }
