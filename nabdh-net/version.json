@@ -1,9 +1,9 @@
 {
   "app": "Nabdh Net PULSE ONE",
-  "versionCode": 21,
-  "versionName": "21",
-  "apkUrl": "https://github.com/ammar100050000-netizen/ammar/releases/download/v21/NabdhNet_MAX_ULTRA.apk",
-  "releasePage": "https://github.com/ammar100050000-netizen/ammar/releases/tag/v21",
+  "versionCode": 22,
+  "versionName": "22",
+  "apkUrl": "https://github.com/ammar100050000-netizen/ammar/releases/download/v22/NabdhNet_MAX_ULTRA.apk",
+  "releasePage": "https://github.com/ammar100050000-netizen/ammar/releases/tag/v22",
   "webUrl": "https://raw.githubusercontent.com/ammar100050000-netizen/ammar/main/nabdh-net/index.html",
   "status": "available",
   "updatedAt": "2026-11-17",
@@ -11,6 +11,7 @@
     "minimal-ui",
     "native-speed-engine-preserved",
     "v20-signature-compatible",
-    "in-app-ui-refresh"
+    "in-app-ui-refresh",
+    "aligned-apk-repair"
   ]
 }
