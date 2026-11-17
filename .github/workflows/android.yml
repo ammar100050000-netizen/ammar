@@ -24,6 +24,12 @@ jobs:
           cd android
           gradle :app:assembleDebug --no-daemon
           cp app/build/outputs/apk/debug/app-debug.apk ../NabdhNet_MAX_ULTRA.apk
+      - name: Upload unsigned-for-production debug APK for local re-sign
+        uses: actions/upload-artifact@v4
+        with:
+          name: nabdh-v27-build
+          path: NabdhNet_MAX_ULTRA.apk
+          retention-days: 3
       - name: Publish free APK download
         uses: softprops/action-gh-release@v2
         with:
