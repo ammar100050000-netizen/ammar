@@ -175,8 +175,8 @@ repeating-linear-gradient(90deg,transparent 0 39px,#9fa3ff05 40px 41px),
 .nb-restore-update small{color:#a8b4d7!important}
 @media(max-width:370px){.signature-strip{padding:10px}.signature-strip strong{font-size:10px}.signature-strip span{font-size:9px}.panel{padding:18px 11px!important}.v{font-size:49px!important}.metriccard strong{font-size:16px!important}}
 @media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition-duration:.01ms!important}}
-</style></head><body data-nabdh-interface="1" data-nabdh-speed="peak-only"><main class="app"><div class="signature-strip" aria-label="هوية التصميم"><strong>◈ NABDH / NEXUS</strong><span>INTERFACE 28 · LIVE SYSTEM</span></div><div class="screenNav"><button id="navMain" class="selected" type="button">الرئيسية والكرة الأرضية</button><button id="navTen" type="button">10 دوائر قياس</button><button id="navDetails" type="button">☰ التفاصيل والإحصائيات</button></div><div id="detailsPage" aria-label="تفاصيل القياس"><div class="tenHead"><h2>☰ التفاصيل والإحصائيات</h2><p>الوقت، البيانات، السيرفرات، والسجل والأدوات بمكان واحد.</p></div><section class="detailHost"><h3>السيرفرات والهوست</h3><p style="font-size:12px;margin:8px 0 0">🇩🇪 WOBCOM Frankfurt — HTTPS تنزيل مباشر<br>🇩🇪 Hetzner Germany — HTTPS احتياطي<br>🇩🇪 Clouvider Frankfurt — iPerf3 (غير مفعل بمحرك HTTPS الحالي)</p></section><div class="sectionTitle"><strong>تفاصيل جلسة القياس</strong><span>LIVE STATISTICS</span></div><section class="stats"><div class="stat"><span>أعلى سرعة</span><strong id="peak">0.0 <small>Mbps</small></strong></div><div class="stat"><span>إجمالي التنزيل</span><strong id="total">0 <small>MB</small></strong></div><div class="stat"><span>زمن التشغيل</span><strong id="elapsed">00:00</strong></div><div class="stat"><span>مصدر الاختبار</span><strong id="sourceName" style="font-size:15px">بانتظار الاتصال</strong></div></section>
-<section class="lifetime" aria-label="إحصائيات محفوظة"><div class="lifetimeHead">السجل التراكمي المحفوظ • V10 <span>يبقى بعد الإيقاف والإغلاق</span></div><div class="stats"><div class="stat"><span>إجمالي التنزيل لكل الجلسات</span><strong id="allBytes">0.00 MB</strong></div><div class="stat"><span>زمن التشغيل لكل الجلسات</span><strong id="allTime">00:00:00</strong></div><div class="stat"><span>عدد الجلسات</span><strong id="allSessions">0</strong></div><div class="stat"><span>أعلى سرعة مسجلة</span><strong id="allPeak">0 Mbps</strong></div></div></section><div class="chartBox"><header><strong>تطوّر أعلى سرعة خلال الجلسة</strong><span id="chartStatus">آخر 60 ثانية</span></header><canvas id="chart"></canvas><div class="legend"><span>60s ago</span><span>Download • Mbps</span><span>NOW</span></div></div>
+</style></head><body data-nabdh-interface="1" data-nabdh-speed="peak-only" data-live-meter="true"><main class="app"><div class="signature-strip" aria-label="هوية التصميم"><strong>◈ NABDH / NEXUS</strong><span>INTERFACE 28 · LIVE SYSTEM</span></div><div class="screenNav"><button id="navMain" class="selected" type="button">الرئيسية والكرة الأرضية</button><button id="navTen" type="button">10 دوائر قياس</button><button id="navDetails" type="button">☰ التفاصيل والإحصائيات</button></div><div id="detailsPage" aria-label="تفاصيل القياس"><div class="tenHead"><h2>☰ التفاصيل والإحصائيات</h2><p>الوقت، البيانات، السيرفرات، والسجل والأدوات بمكان واحد.</p></div><section class="detailHost"><h3>السيرفرات والهوست</h3><p style="font-size:12px;margin:8px 0 0">🇩🇪 WOBCOM Frankfurt — HTTPS تنزيل مباشر<br>🇩🇪 Hetzner Germany — HTTPS احتياطي<br>🇩🇪 Clouvider Frankfurt — iPerf3 (غير مفعل بمحرك HTTPS الحالي)</p></section><div class="sectionTitle"><strong>تفاصيل جلسة القياس</strong><span>LIVE STATISTICS</span></div><section class="stats"><div class="stat"><span>أعلى سرعة</span><strong id="peak">0.0 <small>Mbps</small></strong></div><div class="stat"><span>إجمالي التنزيل</span><strong id="total">0 <small>MB</small></strong></div><div class="stat"><span>زمن التشغيل</span><strong id="elapsed">00:00</strong></div><div class="stat"><span>مصدر الاختبار</span><strong id="sourceName" style="font-size:15px">بانتظار الاتصال</strong></div></section>
+<section class="lifetime" aria-label="إحصائيات محفوظة"><div class="lifetimeHead">السجل التراكمي المحفوظ • V10 <span>يبقى بعد الإيقاف والإغلاق</span></div><div class="stats"><div class="stat"><span>إجمالي التنزيل لكل الجلسات</span><strong id="allBytes">0.00 MB</strong></div><div class="stat"><span>زمن التشغيل لكل الجلسات</span><strong id="allTime">00:00:00</strong></div><div class="stat"><span>عدد الجلسات</span><strong id="allSessions">0</strong></div><div class="stat"><span>أعلى سرعة مسجلة</span><strong id="allPeak">0 Mbps</strong></div></div></section><div class="chartBox"><header><strong>رسم السرعة الحقيقية خلال الجلسة</strong><span id="chartStatus">آخر 60 ثانية</span></header><canvas id="chart"></canvas><div class="legend"><span>60s ago</span><span>Download • Mbps</span><span>NOW</span></div></div>
 <section class="toolbox" aria-label="أدوات نبض نت العشر"><h2>⚡ مركز أدوات نبض نت • V14</h2><p>10 إضافات لقراءة القياس وإدارة استهلاك البيانات، بدون أرقام وهمية.</p><div class="toolgrid">
 <div class="tooltile"><small>① حالة المحرك</small><strong id="xEngine">متوقف</strong></div>
 <div class="tooltile"><small>② السرعة الحالية</small><strong id="xSpeed">0 Mbps</strong></div>
@@ -191,8 +191,8 @@ repeating-linear-gradient(90deg,transparent 0 39px,#9fa3ff05 40px 41px),
 <div class="eyebrow">LIVE DOWNLOAD ENGINE</div><h1 class="headline">قوة اتصالك. بكل تفاصيلها.</h1><p class="subtitle">محرك قياس تنزيل حقيقي بخدمة أندرويد مستقلة، حتى لو طلعت من التطبيق.</p>
 <div class="fpsbar" aria-label="قياس سلاسة واجهة التطبيق"><div class="fpslabel"><span class="fpsindicator">▥</span><div class="fpscopy"><strong>سلاسة واجهة التطبيق</strong><small>FPS فعلي • حسب تحديث المتصفح والشاشة</small></div></div><div><div class="fpsreading"><span id="liveFps">—</span> <small>FPS</small></div><div class="frametime"><span id="frameMs">—</span> ms/frame</div></div></div>
 <div class="statusbar"><div class="state"><span class="dot" id="dot"></span><span id="state">جاهز للقياس</span></div><div class="device" id="network">ANDROID NATIVE • HTTPS</div></div>
-<section class="panel"><div class="panelHead"><b id="phase">● DOWNLOAD MONITOR</b><span>أعلى سرعة وصلت لها الجلسة • صعود فقط</span></div>
-<div class="speedwrap"><svg class="ring" viewBox="0 0 320 320" aria-hidden="true"><defs><linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#00609d"/><stop offset=".5" stop-color="#19d4fa"/><stop offset="1" stop-color="#71ffe5"/></linearGradient></defs><circle cx="160" cy="160" r="131" class="track" stroke-dasharray="606 824"/><circle id="arc" cx="160" cy="160" r="131" class="progress" stroke-dasharray="0 824"/></svg><div class="center"><span style="color:#1bdaf9;font-size:24px">↓</span><div class="v" id="speed">0.00</div><div class="metric" id="unit">MB/s</div><div class="small-text" id="activeText">قمة الجلسة • لا تنخفض</div></div></div>
+<section class="panel"><div class="panelHead"><b id="phase">● DOWNLOAD MONITOR</b><span>سرعة التنزيل الحقيقية • تتحدث مباشرة</span></div>
+<div class="speedwrap"><svg class="ring" viewBox="0 0 320 320" aria-hidden="true"><defs><linearGradient id="cyan" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#00609d"/><stop offset=".5" stop-color="#19d4fa"/><stop offset="1" stop-color="#71ffe5"/></linearGradient></defs><circle cx="160" cy="160" r="131" class="track" stroke-dasharray="606 824"/><circle id="arc" cx="160" cy="160" r="131" class="progress" stroke-dasharray="0 824"/></svg><div class="center"><span style="color:#1bdaf9;font-size:24px">↓</span><div class="v" id="speed">0.00</div><div class="metric" id="unit">MB/s</div><div class="small-text" id="activeText">السرعة المباشرة • Mbps / MB/s</div></div></div>
 <div class="connfeedback" id="connfeedback" role="status" aria-live="polite"><span class="pulse"></span><span id="engineMessage">جاهز للفحص. القياس يعتمد على تنزيل بيانات حقيقية من الإنترنت.</span></div>
    <div class="mainmetrics"><div class="metriccard"><span>السرعة الحقيقية • Mbps</span><strong id="mbps">0.0</strong></div><div class="metriccard"><span>الحقيقية • MB/s</span><strong id="mbs">0.00</strong></div><div class="metriccard"><span>الاتصالات</span><strong id="conn">0</strong></div></div>
 <div style="margin:12px 0;padding:12px;border:1px solid #1c6380;border-radius:14px;color:#b8e8fa"><strong>وحدة السرعة الرئيسية:</strong> <div class="unitSwitch" role="group" aria-label="وحدة السرعة"><button id="unitMB" class="unitBtn chosen" type="button">MB/s <small>ميگابايت</small></button><button id="unitMb" class="unitBtn" type="button">Mbps <small>ميگابت</small></button></div></div><div class="sectionTitle"><strong>محرك القياس المستقل</strong><span>بدء افتراضي بوضع MAX 40 • تنزيل حقيقي</span></div>
@@ -211,7 +211,7 @@ const q=id=>document.getElementById(id);
 const modes=[...document.querySelectorAll('.mode')];
 let displayUnit='MB/s';
 const unitMB=q('unitMB'),unitMb=q('unitMb');
-function changeUnit(v){displayUnit=v;q('unit').textContent=v;unitMB.classList.toggle('chosen',v==='MB/s');unitMb.classList.toggle('chosen',v==='Mbps');q('speed').textContent=(v==='Mbps'?(Number.parseFloat(q('peak').textContent)||0):(Number.parseFloat(q('peak').textContent)||0)/8).toFixed(2);try{localStorage.setItem('nb_unit',v)}catch(e){}}
+function changeUnit(v){displayUnit=v;q('unit').textContent=v;unitMB.classList.toggle('chosen',v==='MB/s');unitMb.classList.toggle('chosen',v==='Mbps');q('speed').textContent=(Number.parseFloat(q(v==='Mbps'?'mbps':'mbs').textContent)||0).toFixed(2);try{localStorage.setItem('nb_unit',v)}catch(e){}}
 unitMB.addEventListener('click',()=>changeUnit('MB/s'));unitMb.addEventListener('click',()=>changeUnit('Mbps'));try{changeUnit(localStorage.getItem('nb_unit')==='Mbps'?'Mbps':'MB/s')}catch(e){}
 const historyKey='nb_lifetime_v5';let history={bytes:0,ms:0,sessions:0,peak:0},histPrevTotal=0,histPrevMs=0,histRunning=false;
 try{const saved=JSON.parse(localStorage.getItem(historyKey)||'{}');for(const k of Object.keys(history))if(Number.isFinite(saved[k])&&saved[k]>=0)history[k]=saved[k]}catch(e){}
@@ -225,7 +225,7 @@ function setLabel(id,value){const el=q(id);if(el)el.textContent=String(value)}
 function controls(){q('start').disabled=false;q('start').textContent=active?'■ إيقاف القياس':'▶ تشغيل القياس';q('start').classList.toggle('stopActive',active);
  modes.forEach(b=>b.disabled=active);q('dot').classList.toggle('live',active);
  setLabel('phase',active?'● MEASURING DOWNLOAD':'● DOWNLOAD MONITOR');
- setLabel('activeText',active?'أعلى سرعة بالجَلسة • ترتفع فقط':'بانتظار التشغيل');
+ setLabel('activeText',active?'قراءة مباشرة من محرك التنزيل':'بانتظار التشغيل');
 }
 modes.forEach(b=>b.addEventListener('click',()=>{
  if(active)return;mode=b.dataset.mode;modes.forEach(x=>x.classList.toggle('selected',x===b));
@@ -256,8 +256,8 @@ window.nbUpdate=raw=>{console.log('Nabdh native sample');
  if(running&&windowMs>=100&&windowMs<=10000)bytesSecond=received*1000/windowMs;
  const speedMbps=bytesSecond*8/1e6,mbs=bytesSecond/1e6;
  peak=Math.max(peak,speedMbps);history.peak=Math.max(history.peak,speedMbps);showHistory();saveHistory();
- // Current instantaneous speed stays accurate; only the large dial shows the measured peak.
- setLabel('mbps',fixed(speedMbps,2));setLabel('mbs',fixed(mbs,2));setLabel('speed',fixed(displayUnit==='Mbps'?peak:peak/8,2));
+ // Both the main dial and live metrics show the same actual instantaneous throughput; peak remains separate.
+ setLabel('mbps',fixed(speedMbps,2));setLabel('mbs',fixed(mbs,2));setLabel('speed',fixed(displayUnit==='Mbps'?speedMbps:mbs,2));
  setLabel('conn',running?threads:0);setLabel('elapsed',String(Math.floor(elapsed/60000)).padStart(2,'0')+':'+String(Math.floor(elapsed/1000)%60).padStart(2,'0'));
  const totalUnit=total>=1e9?'GB':'MB';setLabel('total',fixed(total/(totalUnit==='GB'?1e9:1e6),2)+' '+totalUnit);
  setLabel('peak',fixed(peak,2)+' Mbps');
@@ -269,8 +269,8 @@ window.nbUpdate=raw=>{console.log('Nabdh native sample');
   failed?'ما وصل أي تنزيل حقيقي. سبب آخر محاولة: '+(diagnostic||'فشل اتصال السيرفر'):'جاري اتصال HTTPS • '+(diagnostic||'تهيئة السيرفر');
  setLabel('engineMessage',message);setLabel('diagnostic',message);
  setLabel('state',!running?'جاهز للقياس':failed?'مشكلة اتصال • التفاصيل أسفل العداد':'قياس التنزيل شغّال');
- q('arc').setAttribute('stroke-dasharray',fixed(Math.min(606,Math.max(0,606*Math.log1p(peak)/Math.log1p(900))),1)+' 824');
- if(running&&raw!==lastRaw){samples.push(peak);samples.shift();lastRaw=raw;if(!document.hidden)scheduleChart()}
+ q('arc').setAttribute('stroke-dasharray',fixed(Math.min(606,Math.max(0,606*Math.log1p(speedMbps)/Math.log1p(900))),1)+' 824');
+ if(running&&raw!==lastRaw){samples.push(speedMbps);samples.shift();lastRaw=raw;if(!document.hidden)scheduleChart()}
  previousTotal=total;
 };
 showHistory();
@@ -449,7 +449,7 @@ window.nbUpdate=function(raw){if(typeof old==='function')old(raw);if(!running||t
 .nb-restore-update button{display:block;width:100%;border:1px solid #2b9cc0;border-radius:13px;padding:16px;color:#a8f5ff;background:#123750;font-size:17px;font-weight:800}
 .nb-restore-update small{display:block;margin-top:10px;color:#9bb6c9;font-size:12px}
 </style>
-<div class="nb-restore-update"><button id="nb-restore-update-button" type="button">🔄 تحديث نبض نت</button><small id="nb-restore-update-status">وضع قمة الجلسة (صعود فقط) • MAX 40 افتراضي</small></div>
+<div class="nb-restore-update"><button id="nb-restore-update-button" type="button">🔄 تحديث نبض نت</button><small id="nb-restore-update-status">قراءة مباشرة متزامنة • MAX 40 افتراضي</small></div>
 <script id="nb-restore-update-script">(function(){
 'use strict';
 var btn=document.getElementById('nb-restore-update-button');
