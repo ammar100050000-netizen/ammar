@@ -96,7 +96,86 @@ button.selected,.mode.selected,.unitBtn.chosen{border-color:#82e4df!important;co
 .nb-restore-update{background:#101e29!important;border:1px solid #83e8e340!important;border-radius:22px!important}
 .nb-restore-update button{background:#153d48!important;color:#a8fff3!important;border:1px solid #69cfd2!important;border-radius:16px!important}
 .nb-restore-update small{color:#a7bdc5!important}
-</style></head><body data-nabdh-interface="1"><main class="app"><div class="screenNav"><button id="navMain" class="selected" type="button">الرئيسية والكرة الأرضية</button><button id="navTen" type="button">10 دوائر قياس</button><button id="navDetails" type="button">☰ التفاصيل والإحصائيات</button></div><div id="detailsPage" aria-label="تفاصيل القياس"><div class="tenHead"><h2>☰ التفاصيل والإحصائيات</h2><p>الوقت، البيانات، السيرفرات، والسجل والأدوات بمكان واحد.</p></div><section class="detailHost"><h3>السيرفرات والهوست</h3><p style="font-size:12px;margin:8px 0 0">🇩🇪 WOBCOM Frankfurt — HTTPS تنزيل مباشر<br>🇩🇪 Hetzner Germany — HTTPS احتياطي<br>🇩🇪 Clouvider Frankfurt — iPerf3 (غير مفعل بمحرك HTTPS الحالي)</p></section><div class="sectionTitle"><strong>تفاصيل جلسة القياس</strong><span>LIVE STATISTICS</span></div><section class="stats"><div class="stat"><span>أعلى سرعة</span><strong id="peak">0.0 <small>Mbps</small></strong></div><div class="stat"><span>إجمالي التنزيل</span><strong id="total">0 <small>MB</small></strong></div><div class="stat"><span>زمن التشغيل</span><strong id="elapsed">00:00</strong></div><div class="stat"><span>مصدر الاختبار</span><strong id="sourceName" style="font-size:15px">بانتظار الاتصال</strong></div></section>
+</style><style id="nabdh-nexus-v28">
+/* NEXUS 28 — editorial instrument, not a generic neon dashboard */
+:root{--cyan:#a9a8ff;--soft:#93a3bd;--line:#9b9fff28;--glass:#11172b}
+html{background:#070913!important}
+body{background:
+radial-gradient(ellipse 72% 330px at 48% -24px,#29245855,transparent 100%),
+radial-gradient(ellipse 75% 500px at 100% 55%,#102a4540,transparent 100%),
+repeating-linear-gradient(90deg,transparent 0 39px,#9fa3ff05 40px 41px),
+#070913!important;color:#f5f6ff!important;padding-top:calc(env(safe-area-inset-top) + 12px)!important}
+.app{max-width:640px}
+.signature-strip{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;margin:3px 0 14px;background:#11142a;border:1px solid #a9a8ff2c;border-right:3px solid #a9a8ff;border-radius:10px;box-shadow:0 4px 24px #0003;direction:ltr}
+.signature-strip strong{font:850 12px/1.1 system-ui,sans-serif;letter-spacing:3px;color:#e9e9ff}
+.signature-strip span{font:650 10px/1.3 system-ui,sans-serif;letter-spacing:1.4px;color:#8eafff}
+.screenNav{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;gap:5px!important;margin:0 0 17px!important;padding:5px!important;background:#11152a!important;border:1px solid #8589ad38!important;border-radius:17px!important;box-shadow:inset 0 1px #ffffff08}
+.screenNav button{min-width:0!important;min-height:46px!important;background:transparent!important;border:1px solid transparent!important;border-radius:12px!important;padding:8px 4px!important;color:#9caac7!important;box-shadow:none!important;font-weight:730!important}
+.screenNav button.selected{background:linear-gradient(135deg,#7774e7,#4446a8)!important;color:#fff!important;border-color:#adaaff55!important;box-shadow:0 5px 18px #6558f64a!important}
+.top{border:0!important;padding:10px 0 15px!important}
+.logo{transform:none!important;background:#a9a8ff!important;color:#141333!important;border:0!important;border-radius:14px!important;box-shadow:0 0 0 5px #a9a8ff0b!important}
+.brand strong{font-size:27px!important;font-weight:900!important;letter-spacing:-1.8px!important}
+.brand small{color:#8992b5!important;letter-spacing:3px!important}
+.badge{color:#c7c5ff!important;border:1px solid #8a85f665!important;background:#615baf22!important;border-radius:20px!important;padding:8px 12px!important;letter-spacing:1.3px!important}
+.eyebrow{color:#8d9bff!important;letter-spacing:4px!important;margin-top:18px!important}
+.headline{font-weight:900!important;letter-spacing:-1px!important;color:#fff!important}
+.subtitle{color:#97a7bb!important}
+.fpsbar,.statusbar{border:1px solid #8d92b32a!important;background:linear-gradient(120deg,#131a2f,#0f1426)!important;border-radius:17px!important;box-shadow:none!important}
+.fpsreading,#liveFps{color:#bfbeff!important}
+.statusbar{border-right:3px solid #9da1ff!important}
+.dot.live{background:#7af4d8!important;box-shadow:0 0 0 4px #7af4d81c,0 0 15px #7af4d8!important}
+.panel{background:linear-gradient(165deg,#171d3b 0%,#111a30 31%,#0b1223 79%)!important;border:1px solid #777bd054!important;border-radius:30px!important;padding:24px 17px 21px!important;box-shadow:0 28px 70px #0009,inset 0 1px #c5c6ff22!important}
+.panel:before{background:radial-gradient(circle,#8781f522,transparent 66%)!important;left:0!important;top:-30%!important}
+.panel:after{content:"NEXUS / 28";display:block!important;position:absolute;top:20px;left:18px;transform:none!important;font:750 9px/1.3 monospace;letter-spacing:1.8px;color:#9394c38c;pointer-events:none}
+.panelHead{margin-bottom:4px!important;color:#afbbdb!important}
+.panelHead b{color:#d7b1ff!important}
+.speedwrap{max-width:350px!important;filter:none!important;margin:7px auto 0!important}
+.speedwrap:before{content:"";position:absolute;inset:7%;border:1px dashed #a9b0ff19;border-radius:50%;pointer-events:none}
+.ring{filter:drop-shadow(0 0 10px #8e88ec55)!important}
+.track{stroke:#2f345b!important;stroke-width:7!important}
+.progress{stroke:#aaa8ff!important;stroke-width:9!important;filter:drop-shadow(0 0 9px #aaa8ff)!important}
+.ticks{stroke:#7779bb!important}
+.center{width:67%!important;background:radial-gradient(circle at 40% 25%,#33395c,#141f36 60%,#10152a)!important;border:1px solid #a8abff6e!important;box-shadow:0 0 0 8px #a9abff06,0 0 45px #908aff24,inset 0 0 32px #8e87ff12!important}
+.center>span:first-child{color:#b5b0ff!important}
+.v{color:#f8f8ff!important;font-size:clamp(50px,11.5vw,80px)!important;font-weight:720!important;letter-spacing:-3.7px!important;text-shadow:0 0 34px #c0c0ff3b!important}
+.metric{color:#b9b5ff!important;font-weight:740!important;letter-spacing:2.6px!important}
+.small-text{color:#9da7c4!important}
+.connfeedback{background:#111d38!important;border:1px solid #6d79b15e!important;color:#b9caff!important;border-radius:13px!important}
+.mainmetrics{gap:9px!important;margin-top:15px!important}
+.metriccard{border:1px solid #818bb83f!important;background:#121a30!important;border-radius:15px!important;padding:15px 7px!important}
+.metriccard span{color:#8798ba!important;font-size:11px!important}
+.metriccard strong{font-size:19px!important;color:#f5f6ff!important}
+.unitSwitch{gap:9px!important}
+.unitBtn{background:#101a30!important;color:#b7c1d8!important;border-color:#515e8659!important;border-radius:13px!important}
+.unitBtn.chosen{background:#554fb448!important;color:#eeeaff!important;border-color:#a59dff!important}
+.sectionTitle strong{color:#f5f6ff!important}
+.sectionTitle span{color:#8798ba!important}
+.power{gap:8px!important}
+.mode{background:#121b31!important;border:1px solid #656f954c!important;color:#c4cce2!important;border-radius:14px!important;min-height:65px}
+.mode.selected{background:linear-gradient(150deg,#5652a9,#292e59)!important;border-color:#a8a8ff!important;color:#fff!important;box-shadow:0 7px 22px #8883f52a!important}
+.mode.selected span{color:#d0d0ff!important}
+.start,#tenToggle{background:linear-gradient(115deg,#b6b4ff,#817eff)!important;color:#12132d!important;border-radius:15px!important;border:0!important;box-shadow:0 12px 28px #8e89ff31!important;min-height:62px!important;font-weight:900!important}
+.ctrl .start.stopActive{background:linear-gradient(120deg,#cc5374,#8b3153)!important;color:white!important}
+#diagnostic{color:#92a4c4!important}
+.globePanel{border:1px solid #767bd064!important;background:radial-gradient(ellipse at 50% 40%,#1b2d4d,#0d152c 60%,#0a1021)!important;border-radius:30px!important;box-shadow:0 22px 65px #0008!important}
+.globeTag{color:#c5c0ff!important;border-color:#7976bf!important;background:#7773be25!important}
+.globeHeader p,.globeHint,.globeInfo{color:#99aacc!important}
+.globeBtn{border-color:#8c87dc!important;background:#22284a!important;color:#dcdaff!important;border-radius:14px!important}
+.stat,.tooltile,.tenMeter{background:#141c32!important;border:1px solid #777bb045!important;border-radius:18px!important}
+.stat strong,.tenMeter .dial strong{color:#f5f5ff!important}
+.lifetime .stat{background:#18243c!important;border-color:#8f90c44f!important}
+.chartBox,.toolbox,.detailHost,.tenHead{background:#10192c!important;border-color:#6d79a64f!important;border-radius:20px!important}
+.toolactions button{background:#29315b!important;border-color:#837cda!important;color:#ddd9ff!important}
+.tenMeter .dial{border-color:#7774db!important}
+.tenFoot,.toolnote,.foot{color:#8d9ebd!important}
+.extra{border-color:#6c729a45!important;color:#777fae!important}
+.notice{background:#30251b78!important;border-color:#ae87454a!important;color:#e5bd83!important}
+.nb-restore-update{background:linear-gradient(130deg,#1b2242,#11172c)!important;border:1px solid #9f9eff67!important;border-radius:25px!important;box-shadow:0 20px 50px #0008!important}
+.nb-restore-update button{background:linear-gradient(125deg,#c2bfff,#8989ff)!important;color:#10132c!important;border:0!important;border-radius:16px!important;min-height:70px;font-size:19px!important;font-weight:900!important}
+.nb-restore-update small{color:#a8b4d7!important}
+@media(max-width:370px){.signature-strip{padding:10px}.signature-strip strong{font-size:10px}.signature-strip span{font-size:9px}.panel{padding:18px 11px!important}.v{font-size:49px!important}.metriccard strong{font-size:16px!important}}
+@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation:none!important;transition-duration:.01ms!important}}
+</style></head><body data-nabdh-interface="1"><main class="app"><div class="signature-strip" aria-label="هوية التصميم"><strong>◈ NABDH / NEXUS</strong><span>INTERFACE 28 · LIVE SYSTEM</span></div><div class="screenNav"><button id="navMain" class="selected" type="button">الرئيسية والكرة الأرضية</button><button id="navTen" type="button">10 دوائر قياس</button><button id="navDetails" type="button">☰ التفاصيل والإحصائيات</button></div><div id="detailsPage" aria-label="تفاصيل القياس"><div class="tenHead"><h2>☰ التفاصيل والإحصائيات</h2><p>الوقت، البيانات، السيرفرات، والسجل والأدوات بمكان واحد.</p></div><section class="detailHost"><h3>السيرفرات والهوست</h3><p style="font-size:12px;margin:8px 0 0">🇩🇪 WOBCOM Frankfurt — HTTPS تنزيل مباشر<br>🇩🇪 Hetzner Germany — HTTPS احتياطي<br>🇩🇪 Clouvider Frankfurt — iPerf3 (غير مفعل بمحرك HTTPS الحالي)</p></section><div class="sectionTitle"><strong>تفاصيل جلسة القياس</strong><span>LIVE STATISTICS</span></div><section class="stats"><div class="stat"><span>أعلى سرعة</span><strong id="peak">0.0 <small>Mbps</small></strong></div><div class="stat"><span>إجمالي التنزيل</span><strong id="total">0 <small>MB</small></strong></div><div class="stat"><span>زمن التشغيل</span><strong id="elapsed">00:00</strong></div><div class="stat"><span>مصدر الاختبار</span><strong id="sourceName" style="font-size:15px">بانتظار الاتصال</strong></div></section>
 <section class="lifetime" aria-label="إحصائيات محفوظة"><div class="lifetimeHead">السجل التراكمي المحفوظ • V10 <span>يبقى بعد الإيقاف والإغلاق</span></div><div class="stats"><div class="stat"><span>إجمالي التنزيل لكل الجلسات</span><strong id="allBytes">0.00 MB</strong></div><div class="stat"><span>زمن التشغيل لكل الجلسات</span><strong id="allTime">00:00:00</strong></div><div class="stat"><span>عدد الجلسات</span><strong id="allSessions">0</strong></div><div class="stat"><span>أعلى سرعة مسجلة</span><strong id="allPeak">0 Mbps</strong></div></div></section><div class="chartBox"><header><strong>الرسم البياني المباشر</strong><span id="chartStatus">آخر 60 ثانية</span></header><canvas id="chart"></canvas><div class="legend"><span>60s ago</span><span>Download • Mbps</span><span>NOW</span></div></div>
 <section class="toolbox" aria-label="أدوات نبض نت العشر"><h2>⚡ مركز أدوات نبض نت • V14</h2><p>10 إضافات لقراءة القياس وإدارة استهلاك البيانات، بدون أرقام وهمية.</p><div class="toolgrid">
 <div class="tooltile"><small>① حالة المحرك</small><strong id="xEngine">متوقف</strong></div>
@@ -392,7 +471,7 @@ async function update(){
   var raw=await fetch(base+sha+'/'+path+'?r='+Date.now(),{cache:'no-store'});
   if(!raw.ok)throw Error('تعذّر تنزيل التصميم: '+raw.status);
   var html=await raw.text();
-  if(html.length<400000||html.indexOf('id="globe"')<0||html.indexOf('id="tenGrid"')<0||html.indexOf('nabdh-atelier-v26')<0||html.indexOf('nb-restore-update-script')<0)throw Error('التصميم غير مكتمل');
+  if(html.length<400000||html.indexOf('id="globe"')<0||html.indexOf('id="tenGrid"')<0||html.indexOf('nabdh-nexus-v28')<0||html.indexOf('nb-restore-update-script')<0)throw Error('التصميم غير مكتمل');
   try{sessionStorage.setItem('nb_ui_applied_sha',sha.substring(0,10))}catch(_){}
   document.open();document.write(html);document.close();
  }catch(e){status('خطأ بالتحديث: '+String(e.message||e))}
