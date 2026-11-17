@@ -19,6 +19,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Multi-connection continuous downloader. Measures real bytes received, never a
@@ -45,11 +46,14 @@ public final class SpeedService extends Service {
     private final AtomicLong window = new AtomicLong();
     private ExecutorService pool;
     private Thread ticker;
-    private volatile int activeWorkers;
+    private final AtomicInteger activeWorkers = new AtomicInteger();
+    private final AtomicLong[] lanes = new AtomicLong[10];
+    private volatile long sessionStartedAt;
     private volatile int targetWorkers;
 
     @Override public void onCreate() {
         super.onCreate();
+        for (int i=0; i<lanes.length; i++) lanes[i] = new AtomicLong();
         NotificationChannel channel = new NotificationChannel(
             CHANNEL, "نبض نت: تنزيل فعلي", NotificationManager.IMPORTANCE_LOW);
         ((NotificationManager) getSystemService(NOTIFICATION_SERVICE))
@@ -70,7 +74,9 @@ public final class SpeedService extends Service {
 
         total.set(0L);
         window.set(0L);
-        activeWorkers = 0;
+        activeWorkers.set(0);
+        for(AtomicLong lane:lanes) lane.set(0);
+        sessionStartedAt = SystemClock.elapsedRealtime();
         startForeground(NOTIFICATION_ID, notification("جاري تشغيل " + targetWorkers + " اتصال تنزيل..."));
         pool = Executors.newFixedThreadPool(targetWorkers);
         final int n = targetWorkers;
@@ -105,7 +111,7 @@ public final class SpeedService extends Service {
                 int code = conn.getResponseCode();
                 if (code < 200 || code >= 300)
                     throw new java.io.IOException("HTTP " + code);
-                activeWorkers++;
+                activeWorkers.incrementAndGet();
                 counted = true;
                 try (InputStream stream = new BufferedInputStream(conn.getInputStream(), BUFFER_SIZE)) {
                     int count;
@@ -114,6 +120,7 @@ public final class SpeedService extends Service {
                         if (count <= 0) continue;
                         total.addAndGet(count);
                         window.addAndGet(count);
+                        lanes[id % lanes.length].addAndGet(count);
                     }
                 }
                 failures = 0;
@@ -128,7 +135,7 @@ public final class SpeedService extends Service {
                     Thread.currentThread().interrupt();
                 }
             } finally {
-                if (counted) activeWorkers--;
+                if (counted) activeWorkers.decrementAndGet();
                 if (conn != null) conn.disconnect();
             }
         }
@@ -156,15 +163,22 @@ public final class SpeedService extends Service {
             String report = String.format(Locale.US,
                 "%.1f Mbps (4s %.1f) • %.1f MB • %d/%d",
                 currentMbps, smoothMbps, consumed / 1000000.0,
-                activeWorkers, targetWorkers);
+                activeWorkers.get(), targetWorkers);
             ((NotificationManager) getSystemService(NOTIFICATION_SERVICE))
                 .notify(NOTIFICATION_ID, notification(report));
             getSharedPreferences("nabdh_speed_stats", MODE_PRIVATE).edit()
                 .putFloat("instant_mbps", (float) currentMbps)
                 .putFloat("rolling_mbps", (float) smoothMbps)
                 .putLong("total_bytes", consumed)
-                .putInt("active_connections", activeWorkers)
+                .putInt("active_connections", activeWorkers.get())
+                .putLong("window_bytes",bytes)
+                .putLong("window_ms",duration)
+                .putLong("elapsed_ms",now-sessionStartedAt)
+                .putBoolean("is_running",true)
                 .apply();
+            android.content.SharedPreferences.Editor counters = getSharedPreferences("nabdh_speed_stats", MODE_PRIVATE).edit();
+            for(int i=0;i<lanes.length;i++) counters.putLong("lane_"+i,lanes[i].get());
+            counters.apply();
         }
     }
 
@@ -185,6 +199,7 @@ public final class SpeedService extends Service {
 
     private void stopMeasurement() {
         if (!running.getAndSet(false)) return;
+        getSharedPreferences("nabdh_speed_stats",MODE_PRIVATE).edit().putBoolean("is_running",false).apply();
         if (ticker != null) ticker.interrupt();
         if (pool != null) pool.shutdownNow();
         stopForeground(STOP_FOREGROUND_REMOVE);
