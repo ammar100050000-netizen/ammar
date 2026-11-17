@@ -32,4 +32,4 @@ jobs:
           files: NabdhNet_MAX_ULTRA.apk
           make_latest: true
           draft: false
-          prerelease: true
+          prerelease: false
