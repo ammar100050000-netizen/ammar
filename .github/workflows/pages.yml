@@ -1,4 +1,4 @@
-name: Verify Nabdh Net free update hosting
+name: Verify Nabdh Net live design and updates
 on:
   push:
     paths:
@@ -9,11 +9,16 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - name: Verify live HTML delivery
+      - name: Verify published PULSE ONE interface
         run: |
-          curl -fLsS --retry 2 --max-time 30 'https://raw.githack.com/ammar100050000-netizen/ammar/main/nabdh-net/index.html' -o /tmp/nabdh.html
-          grep -q 'نبض نت MAX ULTRA' /tmp/nabdh.html
-      - name: Verify update manifest delivery
+          curl -fLsS --retry 2 --max-time 30 'https://raw.githubusercontent.com/ammar100050000-netizen/ammar/main/nabdh-net/index.html' -o /tmp/nabdh.html
+          grep -q 'pulse-ui-v21' /tmp/nabdh.html
+          grep -q 'nb_lifetime_v5' /tmp/nabdh.html
+      - name: Verify CORS for Android WebView live updates
+        run: |
+          curl -fsSI -H 'Origin: null' 'https://raw.githubusercontent.com/ammar100050000-netizen/ammar/main/nabdh-net/index.html' >/tmp/headers
+          grep -i 'access-control-allow-origin:' /tmp/headers
+      - name: Verify current update manifest
         run: |
           curl -fLsS --retry 2 --max-time 30 'https://raw.githubusercontent.com/ammar100050000-netizen/ammar/main/nabdh-net/version.json' -o /tmp/version.json
-          python3 -c "import json; j=json.load(open('/tmp/version.json')); assert j['versionCode']>=19 and j['apkUrl'].startswith('https://')"
+          python3 -c "import json; j=json.load(open('/tmp/version.json')); assert j['versionCode']>=21 and j['apkUrl'].startswith('https://github.com/')"
