@@ -1,33 +1,19 @@
-name: Publish Nabdh Net live updates
+name: Verify Nabdh Net free update hosting
 on:
   push:
     paths:
       - 'nabdh-net/**'
       - '.github/workflows/pages.yml'
   workflow_dispatch:
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-concurrency:
-  group: pages
-  cancel-in-progress: true
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - run: |
-          mkdir -p site/nabdh-net
-          cp nabdh-net/index.html site/nabdh-net/index.html
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: site
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Verify live HTML delivery
+        run: |
+          curl -fLsS --retry 2 --max-time 30 'https://raw.githack.com/ammar100050000-netizen/ammar/main/nabdh-net/index.html' -o /tmp/nabdh.html
+          grep -q 'نبض نت MAX ULTRA' /tmp/nabdh.html
+      - name: Verify update manifest delivery
+        run: |
+          curl -fLsS --retry 2 --max-time 30 'https://raw.githubusercontent.com/ammar100050000-netizen/ammar/main/nabdh-net/version.json' -o /tmp/version.json
+          python3 -c "import json; j=json.load(open('/tmp/version.json')); assert j['versionCode']>=19 and j['apkUrl'].startswith('https://')"
