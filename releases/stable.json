@@ -1,11 +1,11 @@
 {
   "schema": 1,
   "channel": "stable",
-  "version": "5.3.7",
+  "version": "5.3.8",
   "files": {
-    "api": "5f96ecf22c8aea4c06e26270931271c6f70972976eb8c89e0c6f10bbc4e0fd81",
-    "ui": "fc3573537f47cff9022d224c58e30849b396305d317438f36f9db023528baf5c",
-    "ctl": "cddac95ba3948fbe5ecb07868eda0c27c9e1d7c9843eabd80b1bb084759fda30",
+    "api": "4460df85bf8d8d3de176a4c248be048a68f77a29a23ee3940c7025e3f9f21f4c",
+    "ui": "aecbd0c29c8d383324970e9692c23320f2b1835f411ae2138018c24b312ba072",
+    "ctl": "0adfc6f6a12e03641c1a496f5bdcac015bcb3b3a628a2aeb3430fd87f3f4a386",
     "init": "4d9069f3db5e88e3c7f046196cd45771ad4d9314aece07e2fa8e0dbff6c947ff",
     "menu": "b9e75a8441be9c7930a38b8951c8ce2b5c86b13ecffc5e6026253b1921c635c8",
     "luci": "ca369df0419e9acc0150f247a98b23ec886f1e5e5f88eacaf22f5644969c5a5b",
