@@ -84,7 +84,7 @@ for key in $KEYS; do
   esac
   if ! cp "$stage/$key" "$dest.new" || ! chmod "$perm" "$dest.new" || ! mv -f "$dest.new" "$dest"; then failed=1; break; fi
 done
-if [ "$failed" -eq 0 ] && cp "$stage/ui" /www/zabour/open.html.new && chmod 644 /www/zabour/open.html.new && mv -f /www/zabour/open.html.new /www/zabour/open.html && printf '%s\n' "$latest" > "$VERSION_FILE" && /etc/init.d/uhttpd restart >/dev/null 2>&1; then
+if [ "$failed" -eq 0 ] && cp "$stage/ui" /www/zabour/open.html.new && chmod 644 /www/zabour/open.html.new && mv -f /www/zabour/open.html.new /www/zabour/open.html && printf '%s\n' "$latest" > "$VERSION_FILE" ; then
   rm -f /tmp/luci-indexcache /tmp/luci-indexcache.* 2>/dev/null || true
   jq -nc --arg current "$CURRENT" --arg latest "$latest" --arg backup "$backup" '{ok:true,updated:true,previous:$current,latest:$latest,backup:$backup,message:"Update installed. Refresh the page."}'
   exit 0
@@ -105,5 +105,4 @@ for key in $KEYS; do
 done
 if [ -e "$backup/open.html" ]; then cp -p "$backup/open.html" /www/zabour/open.html; else rm -f /www/zabour/open.html; fi
 if [ -e "$backup/version" ]; then cp -p "$backup/version" "$VERSION_FILE"; else rm -f "$VERSION_FILE"; fi
-/etc/init.d/uhttpd restart >/dev/null 2>&1 || true
 json_error 'Update failed. Previous files restored.'
