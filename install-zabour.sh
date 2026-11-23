@@ -459,4 +459,6 @@ base64 -d "$work/bundle.b64" > "$work/bundle.tar.gz"
 printf '%s  %s\n' '2b1c21c973ed68aaa450175e578cf187248f33c1ed2e057d1f8780db79d08ab0' "$work/bundle.tar.gz" | sha256sum -c - || { echo 'ERROR: bundle checksum mismatch' >&2; exit 1; }
 cd "$work"
 tar -xzf bundle.tar.gz
+# On fresh installs UCI will not create a missing config package automatically.
+[ -e /etc/config/zabour ] || : > /etc/config/zabour
 sh "$work/zabour-openwrt/install.sh"
