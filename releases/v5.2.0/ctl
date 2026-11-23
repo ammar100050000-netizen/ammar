@@ -1,0 +1,363 @@
+#!/bin/sh
+# Zabour - OpenWrt multi-WAN and optional Xray VLESS controller.
+set -eu
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+CFG=${ZABOUR_CFG:-/etc/zabour}
+mkdir -p "$CFG" 2>/dev/null || true
+err() { printf '%s\n' "ERROR: $*" >&2; exit 1; }
+need() { command -v "$1" >/dev/null 2>&1 || err "Missing dependency: $1"; }
+val() { uci -q get "zabour.global.$1" 2>/dev/null || true; }
+valid_iface() { case "$1" in ''|*[!a-zA-Z0-9_]) return 1;; esac; }
+valid_device() { case "$1" in ''|*[!a-zA-Z0-9_.:-]) return 1;; esac; }
+valid_port() { case "$1" in lan[1-9]|lan[1-9][0-9]) return 0;; *) return 1;; esac; }
+backup() {
+  mkdir -p "$CFG/backups"; chmod 700 "$CFG" "$CFG/backups"
+  for f in network firewall wireless mwan3; do
+    if [ -f "/etc/config/$f" ] && [ ! -f "$CFG/backups/$f.before-zabour" ]; then
+      cp -p "/etc/config/$f" "$CFG/backups/$f.before-zabour"
+    fi
+  done
+}
+config_defaults() {
+ uci -q get zabour.global >/dev/null 2>&1 && return 0
+ uci set zabour.global=global
+ uci set zabour.global.wan1=wwan0
+ uci set zabour.global.wan2=zbwan2
+ uci set zabour.global.mode=balanced
+ uci set zabour.global.weight1=2
+ uci set zabour.global.weight2=1
+ uci set zabour.global.vless_enabled=0
+ uci set zabour.global.transparent=0
+ uci set zabour.global.track_mode=gateway
+ uci set zabour.global.merge_enabled=0
+ uci commit zabour
+}
+create_second_network() {
+ dev="$1"; valid_device "$dev" || err 'Invalid physical device'
+ ip link show dev "$dev" >/dev/null 2>&1 || err "Device $dev not present. Connect it first."
+ # Do not mutate network if there is no matching firewall zone.
+ section=''
+ for candidate in $(uci show firewall 2>/dev/null | sed -n 's/^firewall\.\([^=]*\)=zone$/\1/p'); do
+   if [ "$(uci -q get "firewall.$candidate.name" || true)" = wan ]; then section=$candidate; break; fi
+ done
+ [ -n "$section" ] || err 'WAN firewall zone missing; no changes made'
+ backup
+ uci set network.zbwan2=interface
+ uci set network.zbwan2.proto=dhcp
+ uci set network.zbwan2.device="$dev"
+ uci set network.zbwan2.metric=20
+ uci commit network
+ # Attach to existing masquerading WAN firewall zone.
+ uci -q del_list "firewall.$section.network=zbwan2" || true
+ uci add_list "firewall.$section.network=zbwan2"
+ uci commit firewall
+ /etc/init.d/network reload
+ /etc/init.d/firewall reload
+}
+setup_lan() {
+ dev="$1"; valid_port "$dev" || err 'Choose a dedicated lanN port'
+ [ -e "/sys/class/net/$dev" ] || err "Port $dev not found"
+ [ "$dev" != "$(uci -q get network.lan.device || true)" ] || err 'Cannot remove the management interface'
+ # Do not repurpose a port from an unrelated bridge/network.
+ match=$(uci show network | grep -E "\.device='$dev'$" || true)
+ [ -z "$match" ] || err "Port already assigned directly: $match"
+ backup
+ bridge_section=''
+ for section in $(uci show network | sed -n "s/^network\.\([^=]*\)=device$/\1/p"); do
+    [ "$(uci -q get "network.$section.name" || true)" = br-lan ] && { bridge_section="$section"; break; }
+ done
+ [ -n "$bridge_section" ] || err 'br-lan bridge section missing; this layout needs manual migration'
+ ports=" $(uci -q get "network.$bridge_section.ports" || true) "
+ case "$ports" in *" $dev "*) :;; *) err "Port $dev is not currently in br-lan; refusing unsafe change";; esac
+ # Check zone before detaching, so a missing WAN zone cannot orphan this port.
+ zone_found=0
+ for z in $(uci show firewall 2>/dev/null | sed -n 's/^firewall\.\([^=]*\)=zone$/\1/p'); do
+    [ "$(uci -q get "firewall.$z.name" || true)" = wan ] && zone_found=1
+ done
+ [ "$zone_found" = 1 ] || err 'WAN firewall zone missing. No changes made.'
+ # Preflight number of existing bridge ports; never detach its last member.
+ set -- $(uci -q get "network.$bridge_section.ports" || true)
+ [ "$#" -gt 1 ] || err 'Last LAN port cannot be used as WAN'
+ uci -q del_list "network.$bridge_section.ports=$dev" || err 'Failed to detach LAN port' 
+ # If removing the last LAN member, reject instead of severing access.
+ remaining=$(uci -q get "network.$bridge_section.ports" || true)
+ [ -n "$remaining" ] || err 'Last LAN port cannot be used as WAN'
+ uci commit network
+ create_second_network "$dev"
+}
+setup_wifi() {
+ radio="$1" ssid="$2" password="$3"
+ valid_iface "$radio" || err 'Invalid radio'
+ [ -n "$ssid" ] && [ ${#ssid} -le 32 ] || err 'Invalid Wi-Fi SSID'
+ [ ${#password} -ge 8 ] && [ ${#password} -le 63 ] || err 'Wi-Fi password must be 8-63 chars'
+ [ "$(uci -q get "wireless.$radio" || true)" = wifi-device ] || err 'Radio not found'
+ # Preflight firewall zone before modifying Wi-Fi or network configuration.
+ section=''
+ for candidate in $(uci show firewall 2>/dev/null | sed -n 's/^firewall\.\([^=]*\)=zone$/\1/p'); do
+   if [ "$(uci -q get "firewall.$candidate.name" || true)" = wan ]; then section=$candidate; break; fi
+ done
+ [ -n "$section" ] || err 'WAN firewall zone missing; Wi-Fi unchanged'
+ backup
+ uci set network.zbwan2=interface
+ uci set network.zbwan2.proto=dhcp
+ uci set network.zbwan2.metric=20
+ uci -q delete network.zbwan2.device || true
+ uci commit network
+ uci -q delete wireless.zabour_sta || true
+ uci set wireless.zabour_sta=wifi-iface
+ uci set wireless.zabour_sta.device="$radio"
+ uci set wireless.zabour_sta.mode=sta
+ uci set wireless.zabour_sta.network=zbwan2
+ uci set wireless.zabour_sta.ssid="$ssid"
+ uci set wireless.zabour_sta.encryption=psk2
+ uci set wireless.zabour_sta.key="$password"
+ uci commit wireless
+ # reuse firewall zone setup without assigning physical device
+ uci -q del_list "firewall.$section.network=zbwan2" || true
+ uci add_list "firewall.$section.network=zbwan2"
+ uci commit firewall
+ /etc/init.d/network reload
+ wifi reload
+ /etc/init.d/firewall reload
+}
+configure_mwan3() {
+ need mwan3; backup
+ wan1=$(val wan1); wan2=$(val wan2); mode=$(val mode)
+ valid_iface "$wan1" || err 'Invalid WAN1 logical name'
+ valid_iface "$wan2" || err 'Invalid WAN2 logical name'
+ [ "$wan1" != "$wan2" ] || err 'WAN interfaces must be distinct'
+ [ "$(uci -q get "network.$wan1" || true)" = interface ] || err "WAN1 $wan1 is not defined"
+ w1=$(val weight1); w2=$(val weight2)
+ case "$w1:$w2" in *[!0-9:]*|:*|*:) err 'Invalid weights';; esac
+ [ "$w1" -ge 1 ] && [ "$w1" -le 20 ] && [ "$w2" -ge 1 ] && [ "$w2" -le 20 ] || err 'Weights must be 1 to 20'
+ has2=0
+ [ "$(uci -q get "network.$wan2" || true)" = interface ] && has2=1
+ if [ "$has2" -eq 1 ]; then
+   gw1=$(ifstatus "$wan1" 2>/dev/null | jq -r '[.route[]? | select(.target=="0.0.0.0" and .mask==0) | .nexthop // empty][0] // empty' || true)
+   gw2=$(ifstatus "$wan2" 2>/dev/null | jq -r '[.route[]? | select(.target=="0.0.0.0" and .mask==0) | .nexthop // empty][0] // empty' || true)
+   if [ -n "$gw1" ] && [ "$gw1" = "$gw2" ]; then
+     err 'WAN gateways use the same address. Change one modem LAN subnet (for example 192.168.9.1) before merging.'
+   fi
+ fi
+ case "$mode" in balanced|failover|latency) :;; *) err 'Invalid mode';; esac
+ for s in zb_w1 zb_w2 zb_m1 zb_m2 zb_balanced zb_primary zb_secondary zb_default; do uci -q delete "mwan3.$s" || true; done
+ # Avoid overwriting pre-existing mwan3 WAN configuration; update its health settings in-place.
+ for iface in "$wan1"; do
+   uci -q get "mwan3.$iface" >/dev/null || uci set "mwan3.$iface=interface"
+   uci set "mwan3.$iface.enabled=1"
+   uci set "mwan3.$iface.family=ipv4"
+   uci set "mwan3.$iface.track_method=ping"
+   uci set "mwan3.$iface.reliability=1"
+   uci set "mwan3.$iface.interval=5"
+   uci set "mwan3.$iface.down=3"
+   uci set "mwan3.$iface.up=3"
+   uci -q del_list "mwan3.$iface.track_ip=1.1.1.1" || true
+   uci add_list "mwan3.$iface.track_ip=1.1.1.1"
+ done
+ uci set mwan3.zb_m1=member
+ uci set mwan3.zb_m1.interface="$wan1"
+ uci set mwan3.zb_m1.metric=1
+ uci set mwan3.zb_m1.weight="$w1"
+ uci set mwan3.zb_balanced=policy
+ uci add_list mwan3.zb_balanced.use_member=zb_m1
+ uci set mwan3.zb_balanced.last_resort=unreachable
+ uci set mwan3.zb_primary=policy
+ uci add_list mwan3.zb_primary.use_member=zb_m1
+ uci set mwan3.zb_primary.last_resort=unreachable
+ if [ "$has2" -eq 1 ]; then
+   uci -q get "mwan3.$wan2" >/dev/null || uci set "mwan3.$wan2=interface"
+   uci set "mwan3.$wan2.enabled=1"
+   uci set "mwan3.$wan2.family=ipv4"
+   uci set "mwan3.$wan2.track_method=ping"
+   uci set "mwan3.$wan2.reliability=1"
+   uci set "mwan3.$wan2.interval=5"
+   uci set "mwan3.$wan2.down=3"
+   uci set "mwan3.$wan2.up=3"
+   uci -q del_list "mwan3.$wan2.track_ip=1.0.0.1" || true
+   uci add_list "mwan3.$wan2.track_ip=1.0.0.1"
+   uci set mwan3.zb_m2=member
+   uci set mwan3.zb_m2.interface="$wan2"
+   uci set mwan3.zb_m2.metric=1
+   uci set mwan3.zb_m2.weight="$w2"
+   uci add_list mwan3.zb_balanced.use_member=zb_m2
+   uci set mwan3.zb_secondary=policy
+   uci add_list mwan3.zb_secondary.use_member=zb_m2
+   uci set mwan3.zb_secondary.last_resort=unreachable
+   if [ "$mode" = failover ]; then
+     uci set mwan3.zb_m2.metric=2
+   elif [ "$mode" = latency ]; then
+     # Latency-mode is defined as failover with the lowest RTT as preferred WAN.
+     d1=$(ifstatus "$wan1" 2>/dev/null | jq -r '.l3_device // .device // empty' || true)
+     d2=$(ifstatus "$wan2" 2>/dev/null | jq -r '.l3_device // .device // empty' || true)
+     t1=999999; t2=999999
+     [ -n "$d1" ] && t1=$(ping -I "$d1" -c 1 -W 2 1.1.1.1 2>/dev/null | sed -n 's/.*time=\([0-9.]*\).*/\1/p' | head -n1 | awk '{printf "%d", $1*1000}' || true)
+     [ -n "$d2" ] && t2=$(ping -I "$d2" -c 1 -W 2 1.0.0.1 2>/dev/null | sed -n 's/.*time=\([0-9.]*\).*/\1/p' | head -n1 | awk '{printf "%d", $1*1000}' || true)
+     [ -n "$t1" ] || t1=999999; [ -n "$t2" ] || t2=999999
+     if [ "$t2" -lt "$t1" ]; then uci set mwan3.zb_m1.metric=2; else uci set mwan3.zb_m2.metric=2; fi
+   fi
+ fi
+ # Social-only lines may block public ICMP. Prefer reachable local modem gateways.
+ track_mode=$(val track_mode)
+ for iface in "$wan1"; do
+    if [ "$track_mode" = gateway ]; then
+      gateway=$(ifstatus "$iface" 2>/dev/null | jq -r '[.route[]? | select(.target=="0.0.0.0" and .mask==0) | .nexthop // empty][0] // empty' || true)
+      if [ -n "$gateway" ]; then
+        uci -q delete "mwan3.$iface.track_ip" || true
+        uci add_list "mwan3.$iface.track_ip=$gateway"
+      fi
+    fi
+ done
+ if [ "$has2" -eq 1 ] && [ "$track_mode" = gateway ]; then
+    gateway=$(ifstatus "$wan2" 2>/dev/null | jq -r '[.route[]? | select(.target=="0.0.0.0" and .mask==0) | .nexthop // empty][0] // empty' || true)
+    if [ -n "$gateway" ]; then
+       uci -q delete "mwan3.$wan2.track_ip" || true
+       uci add_list "mwan3.$wan2.track_ip=$gateway"
+    fi
+ fi
+ uci set mwan3.zb_default=rule
+ uci set mwan3.zb_default.family=ipv4
+ uci set mwan3.zb_default.proto=all
+ uci set mwan3.zb_default.use_policy=zb_balanced
+ # Put Zabour catch-all just before the stock IPv4 catch-all (not at index 0):
+ # older targeted rules, like HTTPS sticky, must retain their precedence.
+ rulepos=$(uci show mwan3 | awk -F= '
+   /^mwan3\.[^.]+=((globals)|(interface)|(member)|(policy)|(rule))$/ {
+     if ($1=="mwan3.default_rule_v4") { print pos; exit }
+     pos++
+   }')
+ if [ -n "$rulepos" ]; then uci reorder "mwan3.zb_default=$rulepos"; fi
+ uci commit mwan3
+ /etc/init.d/mwan3 enable
+ /etc/init.d/mwan3 restart
+ uci set zabour.global.merge_enabled=1
+ uci commit zabour
+}
+stop_merge() {
+ # This router may run mwan3 for other tools. Never stop/disable the shared service.
+ for section in zb_default zb_balanced zb_primary zb_secondary zb_m1 zb_m2; do
+   uci -q delete "mwan3.$section" || true
+ done
+ uci commit mwan3
+ /etc/init.d/mwan3 restart || true
+ uci set zabour.global.merge_enabled=0
+ uci commit zabour
+}
+proxy_config() {
+ need jq
+ [ -f "$CFG/profile.json" ] || err 'No VLESS profile saved'
+ # Ensure the input is within safe, supported bounds. Only direct VLESS profiles.
+ jq -e 'type=="object" and .proto=="vless" and (.id|type=="string" and length==36) and (.address|type=="string" and length>0 and length<254) and (.port|type=="number" and .>0 and .<65536) and (.network=="tcp" or .network=="ws" or .network=="grpc") and (.security=="none" or .security=="tls" or .security=="reality")' "$CFG/profile.json" >/dev/null || err 'Invalid/unsupported VLESS profile'
+ uuid=$(jq -r '.id' "$CFG/profile.json")
+ printf '%s\n' "$uuid" | grep -Eq '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' || err 'Invalid VLESS UUID'
+ tmp=$(mktemp "$CFG/xray.XXXXXXXX")
+ trap 'rm -f "$tmp"' EXIT HUP INT TERM
+ jq -n --slurpfile pp "$CFG/profile.json" '
+ ($pp[0]) as $p |
+ {log:{loglevel:"warning"},
+  inbounds:[
+   {tag:"socks-in",listen:"127.0.0.1",port:10808,protocol:"socks",settings:{auth:"noauth",udp:true}},
+   {tag:"redirect-in",listen:"0.0.0.0",port:12345,protocol:"dokodemo-door",settings:{network:"tcp",followRedirect:true},sniffing:{enabled:true,destOverride:["http","tls"]}}
+  ],
+  outbounds:[
+   {tag:"vless-out",protocol:"vless",settings:{vnext:[{address:$p.address,port:$p.port,users:[({id:$p.id,encryption:"none"} + (if ($p.flow // "") != "" then {flow:$p.flow} else {} end))]}]},
+    streamSettings:({network:$p.network,security:$p.security}
+      + (if $p.network == "ws" then {wsSettings:{path:($p.path // "/"),headers:{Host:($p.host // $p.address)}}} else {} end)
+      + (if $p.network == "grpc" then {grpcSettings:{serviceName:($p.serviceName // "")}} else {} end)
+      + (if $p.network == "tcp" and ($p.headerType // "") == "http" then {tcpSettings:{header:{type:"http",request:{path:[($p.path // "/")],headers:{Host:[($p.host // $p.address)]}}}}} else {} end)
+      + (if $p.security == "tls" then {tlsSettings:({serverName:($p.sni // $p.address),allowInsecure:false} + (if ($p.fingerprint // "") != "" then {fingerprint:$p.fingerprint} else {} end))} else {} end)
+      + (if $p.security == "reality" then {realitySettings:{serverName:($p.sni // $p.address),fingerprint:($p.fingerprint // "chrome"),publicKey:($p.publicKey // ""),shortId:($p.shortId // ""),spiderX:($p.spiderX // "")}} else {} end))},
+   {tag:"direct",protocol:"freedom"}
+  ],routing:{domainStrategy:"AsIs",rules:[{type:"field",inboundTag:["socks-in","redirect-in"],outboundTag:"vless-out"}]}}
+ ' > "$tmp"
+ binary=$(command -v xray || true)
+ if [ -n "$binary" ]; then "$binary" run -test -config "$tmp" >/dev/null 2>&1 || err 'Xray rejects configuration; original preserved'; fi
+ mv -f "$tmp" "$CFG/xray.json"; chmod 600 "$CFG/xray.json"
+}
+proxy_nft() {
+ # Firewall4 includes /etc/nftables.d/*.nft within inet fw4. This persists
+ # across service restarts and avoids a separate, lost-at-reboot nft table.
+ command -v fw4 >/dev/null 2>&1 || err 'Firewall4 / fw4 is required'
+ local_include=/etc/nftables.d/99-zabour.nft
+ mkdir -p /etc/nftables.d
+ old_include="$CFG/previous-nft.include"
+ if [ -f "$local_include" ]; then cp "$local_include" "$old_include"; else rm -f "$old_include"; fi
+ if [ "$(val transparent)" = 1 ] && [ "$(val vless_enabled)" = 1 ] && [ -s "$CFG/xray.json" ]; then
+   cat > "$local_include.new" <<'EOF'
+set zb_private4 {
+ type ipv4_addr
+ flags interval
+ elements = { 0.0.0.0/8, 10.0.0.0/8, 100.64.0.0/10, 127.0.0.0/8, 169.254.0.0/16, 172.16.0.0/12, 192.168.0.0/16, 224.0.0.0/4, 240.0.0.0/4 }
+}
+chain zb_redirect {
+ type nat hook prerouting priority -101; policy accept;
+ iifname "br-lan" meta nfproto ipv4 ip daddr != @zb_private4 meta l4proto tcp redirect to :12345
+}
+EOF
+   cp "$local_include.new" "$local_include"
+   rm -f "$local_include.new"
+ else
+   rm -f "$local_include" "$local_include.new"
+ fi
+ if ! fw4 check >/dev/null 2>&1; then
+   if [ -f "$old_include" ]; then cp "$old_include" "$local_include"; else rm -f "$local_include"; fi
+   rm -f "$old_include"
+   err 'The transparent proxy firewall rules failed validation; previous rules restored'
+ fi
+ rm -f "$old_include"
+ /etc/init.d/firewall restart
+}
+proxy_start() {
+ if [ "$(val vless_enabled)" = 1 ] && [ -f "$CFG/profile.json" ]; then
+   command -v xray >/dev/null 2>&1 || err 'Install Xray-core first (xray binary missing)'
+   proxy_config
+   /etc/init.d/zabour restart
+ else
+   /etc/init.d/zabour stop || true
+ fi
+ proxy_nft
+}
+rollback() {
+  [ -d "$CFG/backups" ] || err 'No backups found'
+  /etc/init.d/zabour stop || true
+  rm -f /etc/nftables.d/99-zabour.nft
+  for f in network firewall wireless mwan3; do
+    if [ -f "$CFG/backups/$f.before-zabour" ]; then
+      cp -p "$CFG/backups/$f.before-zabour" "/etc/config/$f"
+    fi
+  done
+  uci set zabour.global.merge_enabled=0
+  uci set zabour.global.vless_enabled=0
+  uci set zabour.global.transparent=0
+  uci commit zabour
+  /etc/init.d/network reload || true
+  wifi reload || true
+  /etc/init.d/firewall restart || true
+  /etc/init.d/mwan3 restart || true
+  echo 'Original config backups restored; note that later edits to these files may have been overwritten.'
+}
+
+case "${1:-}" in
+ init) need uci; config_defaults;;
+ set)
+   key="${2:-}"; value="${3:-}"
+   case "$key" in
+     track_mode) case "$value" in gateway|public) :;; *) err 'Invalid tracking mode';; esac;;
+     wan1|wan2) valid_iface "$value" || err 'Invalid logical interface';;
+     mode) case "$value" in balanced|failover|latency) :;; *) err 'Invalid mode';; esac;;
+     weight1|weight2) case "$value" in ''|*[!0-9]*) err 'Invalid weight';; esac; [ "$value" -ge 1 ] && [ "$value" -le 20 ] || err 'Invalid weight range';;
+     vless_enabled|transparent) case "$value" in 0|1) :;; *) err 'Invalid switch';; esac;;
+     *) err 'Unknown setting';;
+   esac
+   uci set "zabour.global.$key=$value"; uci commit zabour;;
+ lan) setup_lan "${2:-}";;
+ usb) create_second_network "${2:-}";;
+ wifi) setup_wifi "${2:-}" "${3:-}" "${4:-}";;
+ apply) configure_mwan3;;
+ stop-merge) stop_merge;;
+ rollback) rollback;;
+ gen-xray) proxy_config;;
+ proxy) proxy_start;;
+ nft) proxy_nft;;
+ reset-proxy) uci set zabour.global.vless_enabled=0; uci set zabour.global.transparent=0; uci commit zabour; /etc/init.d/zabour stop || true; proxy_nft;;
+ *) printf 'Usage: zabour-ctl init|set KEY VAL|lan PORT|usb DEVICE|wifi RADIO SSID PASSWORD|apply|proxy|nft|stop-merge|rollback|reset-proxy\n' >&2; exit 2;;
+esac
