@@ -1,0 +1,19 @@
+#!/bin/sh /etc/rc.common
+USE_PROCD=1
+START=95
+STOP=10
+start_service() {
+ [ "$(uci -q get zabour.global.vless_enabled || true)" = 1 ] || return 0
+ if [ ! -s /etc/zabour/xray.json ]; then
+  [ -s /etc/zabour/profile.json ] || return 0
+  /usr/bin/zabour-ctl gen-xray >/dev/null 2>&1 || return 1
+ fi
+ binary=$(command -v xray || true)
+ [ -n "$binary" ] || return 0
+ procd_open_instance
+ procd_set_param command "$binary" run -config /etc/zabour/xray.json
+ procd_set_param respawn 3600 5 5
+ procd_set_param file /etc/zabour/xray.json
+ procd_close_instance
+}
+service_triggers() { procd_add_reload_trigger zabour; }
