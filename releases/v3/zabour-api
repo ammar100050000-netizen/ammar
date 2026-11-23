@@ -1,0 +1,133 @@
+#!/bin/sh
+# HTTP CGI must authenticate every request. Never expose outside the trusted LAN.
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+umask 077
+printf 'Content-Type: application/json; charset=utf-8\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\n\r\n'
+error() { jq -nc --arg e "$1" '{ok:false,error:$e}'; exit 0; }
+# Temporary guest mode. Explicitly prohibit requests outside the local admin LAN.
+# WARNING: any client connected to this LAN can administer Zabour until auth is restored.
+case "${REMOTE_ADDR:-}" in
+  127.0.0.1|::1|192.168.1.*) : ;;
+  *) error 'Forbidden: management LAN only' ;;
+esac
+command -v jq >/dev/null 2>&1 || error 'jq not installed'
+method=${REQUEST_METHOD:-GET}
+if [ "$method" = GET ]; then
+ action=${QUERY_STRING:-status}
+ input='{}'
+else
+ [ "$method" = POST ] || error 'Only GET/POST supported'
+ n=${CONTENT_LENGTH:-0}
+ case "$n" in ''|*[!0-9]*) error 'Invalid body size';; esac
+ [ "$n" -le 8192 ] || error 'Request too large'
+ input=$(head -c "$n")
+ printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || error 'Invalid JSON'
+ action=$(printf '%s' "$input" | jq -r '.action // ""')
+fi
+arg() { printf '%s' "$input" | jq -r --arg k "$1" '.[$k] // empty | tostring'; }
+settings() {
+ jq -n \
+  --arg wan1 "$(uci -q get zabour.global.wan1 || true)" \
+  --arg wan2 "$(uci -q get zabour.global.wan2 || true)" \
+  --arg mode "$(uci -q get zabour.global.mode || true)" \
+  --arg weight1 "$(uci -q get zabour.global.weight1 || true)" \
+  --arg weight2 "$(uci -q get zabour.global.weight2 || true)" \
+  --arg track_mode "$(uci -q get zabour.global.track_mode || echo gateway)" \
+  --arg merge_enabled "$(uci -q get zabour.global.merge_enabled || true)" \
+  --arg enabled "$(uci -q get zabour.global.vless_enabled || true)" \
+  --arg transparent "$(uci -q get zabour.global.transparent || true)" \
+  '{wan1:$wan1,wan2:$wan2,mode:$mode,track_mode:$track_mode,weight1:($weight1|tonumber? // 1),weight2:($weight2|tonumber? // 1),merge_enabled:($merge_enabled=="1"),vless_enabled:($enabled=="1"),transparent:($transparent=="1")}'
+}
+# Normalize ifstatus output: on missing interfaces NoobWRT can emit a plain
+# "Interface ... not found" message even when stderr is redirected.
+json_status() {
+  raw=$(ifstatus "$1" 2>/dev/null || true)
+  printf '%s' "$raw" | jq -cRs 'try (fromjson | if type=="object" then . else {} end) catch {}'
+}
+# /sys/class/net counters must be non-negative integer strings for jq --argjson.
+read_stat() {
+  dev="$1"; kind="$2"
+  case "$dev" in ''|*[!a-zA-Z0-9_.:-]*) echo 0; return;; esac
+  num=$(cat "/sys/class/net/$dev/statistics/$kind" 2>/dev/null || true)
+  case "$num" in ''|*[!0-9]*) echo 0;; *) printf '%s\n' "$num";; esac
+}
+status() {
+  wan1=$(uci -q get zabour.global.wan1 2>/dev/null || echo wwan0)
+  wan2=$(uci -q get zabour.global.wan2 2>/dev/null || echo zbwan2)
+  # Names may not exist before the second router is connected. That's normal.
+  a=$(json_status "$wan1")
+  b=$(json_status "$wan2")
+  s=$(settings)
+  xray=0; pidof xray >/dev/null 2>&1 && xray=1
+  mwstatus=$(mwan3 status 2>/dev/null | head -c 4000 || true)
+  dev1=$(printf '%s' "$a" | jq -r '.l3_device // .device // empty')
+  dev2=$(printf '%s' "$b" | jq -r '.l3_device // .device // empty')
+  rx1=$(read_stat "$dev1" rx_bytes); tx1=$(read_stat "$dev1" tx_bytes)
+  rx2=$(read_stat "$dev2" rx_bytes); tx2=$(read_stat "$dev2" tx_bytes)
+  jq -nc --argjson a "$a" --argjson b "$b" --argjson config "$s" \
+    --arg xray "$xray" --arg mw "$mwstatus" \
+    --argjson rx1 "$rx1" --argjson tx1 "$tx1" \
+    --argjson rx2 "$rx2" --argjson tx2 "$tx2" \
+    '{ok:true,settings:$config,xray_active:($xray=="1"),mwan_status:$mw,
+      lines:[{name:$config.wan1,up:($a.up // false),device:($a.l3_device // $a.device // ""),ip:($a["ipv4-address"][0].address // ""),rx:$rx1,tx:$tx1},
+             {name:$config.wan2,up:($b.up // false),device:($b.l3_device // $b.device // ""),ip:($b["ipv4-address"][0].address // ""),rx:$rx2,tx:$tx2}]}'
+}
+
+case "$action" in
+ status|'') status;;
+ discover)
+   uci show network | sed -n 's/^network\.\([A-Za-z0-9_]*\)=interface$/\1/p' | jq -R -s 'split("\n")|map(select(length>0))' > /tmp/zabour-interface-list.$$
+   uci show wireless 2>/dev/null | sed -n 's/^wireless\.\([A-Za-z0-9_]*\)=wifi-device$/\1/p' | jq -R -s 'split("\n")|map(select(length>0))' > /tmp/zabour-radio-list.$$
+   (ls -1 /sys/class/net 2>/dev/null || true) | jq -R -s 'split("\n")|map(select(length>0))' > /tmp/zabour-device-list.$$
+   jq -nc --slurpfile i /tmp/zabour-interface-list.$$ --slurpfile r /tmp/zabour-radio-list.$$ --slurpfile d /tmp/zabour-device-list.$$ '{ok:true,interfaces:$i[0],radios:$r[0],devices:$d[0]}'
+   rm -f /tmp/zabour-interface-list.$$ /tmp/zabour-radio-list.$$ /tmp/zabour-device-list.$$;;
+ devices)
+   if [ -f /tmp/dhcp.leases ]; then
+     awk '{print $3"\t"$2"\t"$4}' /tmp/dhcp.leases | jq -R -s '[split("\n")[] | select(length>0) | split("\t") | {ip:.[0],mac:.[1],hostname:.[2]}] | {ok:true,devices:.}'
+   else echo '{"ok":true,"devices":[]}'; fi;;
+ profile)
+   if [ -f /etc/zabour/profile.json ]; then
+     jq '{ok:true,profile:(. | del(.id) + {has_id:true})}' /etc/zabour/profile.json
+   else echo '{"ok":true,"profile":null}'; fi;;
+ save)
+   for key in wan1 wan2 mode weight1 weight2 track_mode; do
+     v=$(arg "$key")
+     [ -n "$v" ] || error "Missing $key"
+     out=$(/usr/bin/zabour-ctl set "$key" "$v" 2>&1) || error "$out"
+   done
+   echo '{"ok":true}';;
+ stop_merge)
+   out=$(/usr/bin/zabour-ctl stop-merge 2>&1) || error "$out"
+   echo '{"ok":true}';;
+ apply)
+   out=$(/usr/bin/zabour-ctl apply 2>&1) || error "$out"
+   echo '{"ok":true}';;
+ lan|usb)
+   key=$(arg device)
+   out=$(/usr/bin/zabour-ctl "$action" "$key" 2>&1) || error "$out"
+   echo '{"ok":true}';;
+ wifi)
+   radio=$(arg radio); ssid=$(arg ssid); pass=$(arg password)
+   out=$(/usr/bin/zabour-ctl wifi "$radio" "$ssid" "$pass" 2>&1) || error "$out"
+   echo '{"ok":true}';;
+ vless)
+   profile=$(printf '%s' "$input" | jq -c '.profile')
+   [ "$profile" != null ] || error 'Missing profile'
+   tmp=$(mktemp /etc/zabour/p.XXXXXXXX) || error 'Cannot create profile'
+   printf '%s\n' "$profile" > "$tmp"
+   jq -e 'type=="object" and .proto=="vless" and (.id|test("^[A-Fa-f0-9-]{36}$")) and (.address|type=="string" and length>0 and length<254) and (.port|type=="number" and .>0 and .<65536) and (.network=="tcp" or .network=="ws" or .network=="grpc") and (.security=="none" or .security=="tls" or .security=="reality")' "$tmp" >/dev/null 2>&1 || { rm "$tmp"; error 'VLESS parameters are invalid or unsupported'; }
+   mv "$tmp" /etc/zabour/profile.json; chmod 600 /etc/zabour/profile.json
+   echo '{"ok":true}';;
+ proxy)
+   enabled=$(arg enabled); transparent=$(arg transparent)
+   [ "$enabled" = true ] && enabled=1 || enabled=0
+   [ "$transparent" = true ] && transparent=1 || transparent=0
+   out=$(/usr/bin/zabour-ctl set vless_enabled "$enabled" 2>&1) || error "$out"
+   out=$(/usr/bin/zabour-ctl set transparent "$transparent" 2>&1) || error "$out"
+   out=$(/usr/bin/zabour-ctl proxy 2>&1) || error "$out"
+   echo '{"ok":true}';;
+ stop_proxy)
+   out=$(/usr/bin/zabour-ctl reset-proxy 2>&1) || error "$out"
+   echo '{"ok":true}';;
+ *) error 'Unknown action';;
+esac
