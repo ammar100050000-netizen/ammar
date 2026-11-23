@@ -1,0 +1,205 @@
+#!/bin/sh
+# HTTP CGI must authenticate every request. Never expose outside the trusted LAN.
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+umask 077
+printf 'Content-Type: application/json; charset=utf-8\r\nCache-Control: no-store\r\nX-Content-Type-Options: nosniff\r\n\r\n'
+error() { jq -nc --arg e "$1" '{ok:false,error:$e}'; exit 0; }
+# Temporary guest mode. Explicitly prohibit requests outside the local admin LAN.
+# WARNING: any client connected to this LAN can administer Zabour until auth is restored.
+case "${REMOTE_ADDR:-}" in
+  127.0.0.1|::1|192.168.1.*) : ;;
+  *) error 'Forbidden: management LAN only' ;;
+esac
+command -v jq >/dev/null 2>&1 || error 'jq not installed'
+method=${REQUEST_METHOD:-GET}
+if [ "$method" = GET ]; then
+ action=${QUERY_STRING:-status}
+ input='{}'
+else
+ [ "$method" = POST ] || error 'Only GET/POST supported'
+ # uhttpd on NoobWRT may not export arbitrary X-* headers to CGI.
+ # Require JSON (non-simple browser request), check any provided browser origin,
+ # and enforce the management subnet above. Guest LAN access is temporary.
+ case "${HTTP_SEC_FETCH_SITE:-}" in ''|same-origin|none) : ;; *) error 'Cross-site request rejected' ;; esac
+ case "${HTTP_ORIGIN:-}" in
+   '') case "${HTTP_REFERER:-}" in ''|http://192.168.1.1/*|https://192.168.1.1/*) : ;; *) error 'Cross-origin referrer blocked';; esac ;;
+ esac
+ case "${CONTENT_TYPE:-}" in application/json|application/json\;*) :;; *) error 'Content-Type must be application/json';; esac
+ # Same-origin check when a browser supplies its Origin header.
+ case "${HTTP_ORIGIN:-}" in ''|http://192.168.1.1|https://192.168.1.1) :;; *) error 'Cross-origin request blocked';; esac
+ n=${CONTENT_LENGTH:-0}
+ case "$n" in ''|*[!0-9]*) error 'Invalid body size';; esac
+ [ "$n" -le 8192 ] || error 'Request too large'
+ input=$(head -c "$n")
+ printf '%s' "$input" | jq -e 'type=="object"' >/dev/null 2>&1 || error 'Invalid JSON'
+ action=$(printf '%s' "$input" | jq -r '.action // ""')
+fi
+arg() { printf '%s' "$input" | jq -r --arg k "$1" '.[$k] // empty | tostring'; }
+settings() {
+ jq -n \
+  --arg wan1 "$(uci -q get zabour.global.wan1 || true)" \
+  --arg wan2 "$(uci -q get zabour.global.wan2 || true)" \
+  --arg mode "$(uci -q get zabour.global.mode || true)" \
+  --arg weight1 "$(uci -q get zabour.global.weight1 || true)" \
+  --arg weight2 "$(uci -q get zabour.global.weight2 || true)" \
+  --arg track_mode "$(uci -q get zabour.global.track_mode || echo gateway)" \
+  --arg merge_enabled "$(uci -q get zabour.global.merge_enabled || true)" \
+  --arg enabled "$(uci -q get zabour.global.vless_enabled || true)" \
+  --arg transparent "$(uci -q get zabour.global.transparent || true)" \
+  '{wan1:$wan1,wan2:$wan2,mode:$mode,track_mode:$track_mode,weight1:($weight1|tonumber? // 1),weight2:($weight2|tonumber? // 1),merge_enabled:($merge_enabled=="1"),vless_enabled:($enabled=="1"),transparent:($transparent=="1")}'
+}
+# Normalize ifstatus output: on missing interfaces NoobWRT can emit a plain
+# "Interface ... not found" message even when stderr is redirected.
+json_status() {
+  raw=$(ifstatus "$1" 2>/dev/null || true)
+  printf '%s' "$raw" | jq -cRs 'try (fromjson | if type=="object" then . else {} end) catch {}'
+}
+# /sys/class/net counters must be non-negative integer strings for jq --argjson.
+read_stat() {
+  dev="$1"; kind="$2"
+  case "$dev" in ''|*[!a-zA-Z0-9_.:-]*) echo 0; return;; esac
+  num=$(cat "/sys/class/net/$dev/statistics/$kind" 2>/dev/null || true)
+  case "$num" in ''|*[!0-9]*) echo 0;; *) printf '%s\n' "$num";; esac
+}
+status() {
+  wan1=$(uci -q get zabour.global.wan1 2>/dev/null || echo wwan0)
+  wan2=$(uci -q get zabour.global.wan2 2>/dev/null || echo zbwan2)
+  # Names may not exist before the second router is connected. That's normal.
+  a=$(json_status "$wan1")
+  b=$(json_status "$wan2")
+  s=$(settings)
+  xray=0; pidof xray >/dev/null 2>&1 && xray=1
+  mwstatus=$(mwan3 status 2>/dev/null | head -c 4000 || true)
+  dev1=$(printf '%s' "$a" | jq -r '.l3_device // .device // empty')
+  dev2=$(printf '%s' "$b" | jq -r '.l3_device // .device // empty')
+  rx1=$(read_stat "$dev1" rx_bytes); tx1=$(read_stat "$dev1" tx_bytes)
+  rx2=$(read_stat "$dev2" rx_bytes); tx2=$(read_stat "$dev2" tx_bytes)
+  jq -nc --argjson a "$a" --argjson b "$b" --argjson config "$s" \
+    --arg xray "$xray" --arg mw "$mwstatus" \
+    --argjson rx1 "$rx1" --argjson tx1 "$tx1" \
+    --argjson rx2 "$rx2" --argjson tx2 "$tx2" \
+    '{ok:true,settings:$config,xray_active:($xray=="1"),mwan_status:$mw,
+      lines:[{name:$config.wan1,up:($a.up // false),device:($a.l3_device // $a.device // ""),ip:($a["ipv4-address"][0].address // ""),rx:$rx1,tx:$tx1},
+             {name:$config.wan2,up:($b.up // false),device:($b.l3_device // $b.device // ""),ip:($b["ipv4-address"][0].address // ""),rx:$rx2,tx:$tx2}]}'
+}
+
+case "$action" in
+ status|'') status;;
+ version) jq -nc --arg version "$(cat /etc/zabour/version 2>/dev/null || echo 5.3.0)" '{ok:true,version:$version}';;
+ update_check)
+   [ -x /usr/bin/zabour-update ] || error 'نظام التحديث مو مثبت؛ نفّذ أمر الترقية مرة واحدة'
+   out=$(/usr/bin/zabour-update check 2>&1) || error "$out"
+   printf '%s\n' "$out";;
+ update_apply)
+   [ -x /usr/bin/zabour-update ] || error 'نظام التحديث مو مثبت'
+   out=$(/usr/bin/zabour-update apply 2>&1) || error "$out"
+   printf '%s\n' "$out";;
+ wifi_scan)
+   radio=$(arg radio)
+   case "$radio" in ''|*[!A-Za-z0-9_-]*) error 'اسم الراديو غير صالح';; esac
+   [ "$(uci -q get "wireless.$radio" || true)" = wifi-device ] || error 'راديو Wi-Fi مو موجود'
+   command -v iwinfo >/dev/null 2>&1 || error 'حزمة iwinfo غير مثبتة'
+   scan=$(iwinfo "$radio" scan 2>&1) || error "فشل فحص الشبكات: $scan"
+   jq -nc --arg output "$(printf '%s' "$scan" | head -c 8000)" '{ok:true,scan:$output}';;
+ features)
+   v2raya=0; pidof v2raya >/dev/null 2>&1 && v2raya=1
+   wg=0; command -v wg >/dev/null 2>&1 && wg=1
+   dns=$(uci -q get network.lan.dns || true)
+   [ -n "$dns" ] || dns='DHCP تلقائي'
+   tfo=$(cat /proc/sys/net/ipv4/tcp_fastopen 2>/dev/null || echo 'غير معروف')
+   jq -nc --arg v "$v2raya" --arg w "$wg" --arg dns "$dns" --arg tfo "$tfo" '{ok:true,v2raya:($v=="1"),wireguard:($w=="1"),dns:$dns,tcp_fastopen:$tfo}';;
+ devices)
+   if [ -f /tmp/dhcp.leases ]; then
+     awk '{print $3"\t"$2"\t"$4}' /tmp/dhcp.leases | jq -R -s '[split("\n")[] | select(length>0) | split("\t") | {ip:.[0],mac:.[1],hostname:.[2]}] | {ok:true,devices:.}'
+   else echo '{"ok":true,"devices":[]}'; fi;;
+ profile)
+   if [ -f /etc/zabour/profile.json ]; then
+     jq -c '{ok:true,profile:(. | del(.id,.publicKey,.shortId) + {has_id:true})}' /etc/zabour/profile.json || error 'ملف السيرفر غير صالح'
+   else echo '{"ok":true,"profile":null}'; fi;;
+ save)
+   for key in wan1 wan2 mode weight1 weight2 track_mode; do
+     v=$(arg "$key")
+     [ -n "$v" ] || error "Missing $key"
+     out=$(/usr/bin/zabour-ctl set "$key" "$v" 2>&1) || error "$out"
+   done
+   echo '{"ok":true}';;
+ stop_merge)
+   out=$(/usr/bin/zabour-ctl stop-merge 2>&1) || error "$out"
+   echo '{"ok":true}';;
+ apply)
+   out=$(/usr/bin/zabour-ctl apply 2>&1) || error "$out"
+   echo '{"ok":true}';;
+ lan|usb)
+   key=$(arg device)
+   out=$(/usr/bin/zabour-ctl "$action" "$key" 2>&1) || error "$out"
+   echo '{"ok":true}';;
+ wifi)
+   radio=$(arg radio); ssid=$(arg ssid); pass=$(arg password)
+   out=$(/usr/bin/zabour-ctl wifi "$radio" "$ssid" "$pass" 2>&1) || error "$out"
+   echo '{"ok":true}';;
+ servers_list)
+   if [ ! -s /etc/zabour/profiles.json ]; then
+     if [ -s /etc/zabour/profile.json ]; then
+       jq -s '.[0:1]' /etc/zabour/profile.json > /etc/zabour/profiles.json 2>/dev/null || echo '[]' > /etc/zabour/profiles.json
+     else echo '[]' > /etc/zabour/profiles.json; fi
+   fi
+   jq -c '{ok:true,servers:map({name,address,port,network,security})}' /etc/zabour/profiles.json || error 'قائمة السيرفرات غير صالحة';;
+ server_select)
+   i=$(arg index)
+   case "$i" in 0|[1-9]|[1-9][0-9]) :;; *) error 'رقم السيرفر غير صالح';; esac
+   [ -s /etc/zabour/profiles.json ] || error 'قائمة السيرفرات فارغة'
+   tmp=$(mktemp /etc/zabour/active.XXXXXXXX) || error 'تعذر تجهيز السيرفر'
+   jq -ce --argjson i "$i" '.[$i] // empty' /etc/zabour/profiles.json > "$tmp" || { rm -f "$tmp"; error 'السيرفر غير موجود'; }
+   chmod 600 "$tmp"; mv "$tmp" /etc/zabour/profile.json
+   echo '{"ok":true}';;
+ server_delete)
+   i=$(arg index)
+   case "$i" in 0|[1-9]|[1-9][0-9]) :;; *) error 'رقم السيرفر غير صالح';; esac
+   [ -s /etc/zabour/profiles.json ] || error 'قائمة السيرفرات فارغة'
+   jq -e --argjson i "$i" '.[$i] != null' /etc/zabour/profiles.json >/dev/null || error 'السيرفر غير موجود'
+   tmp=$(mktemp /etc/zabour/list.XXXXXXXX) || error 'تعذر تعديل القائمة'
+   jq -c --argjson i "$i" 'del(.[$i])' /etc/zabour/profiles.json > "$tmp" || { rm -f "$tmp"; error 'تعذر حذف السيرفر'; }
+   chmod 600 "$tmp"; mv "$tmp" /etc/zabour/profiles.json
+   echo '{"ok":true}';;
+ vless)
+   # Input JSON is validated before file writes. Support standard VLESS TCP/HTTP header,
+   # WS, gRPC and none/TLS/REALITY security variants.
+   profile=$(printf '%s' "$input" | jq -ce '.profile | select(type=="object")' 2>/dev/null) || error 'ملف VLESS JSON غير صالح أو ناقص'
+   tmp=$(mktemp /etc/zabour/p.XXXXXXXX) || error 'تعذر إنشاء ملف السيرفر'
+   printf '%s\n' "$profile" > "$tmp"
+   reason=$(jq -r '
+     . as $p |
+     if $p.proto != "vless" then "النوع لازم VLESS"
+     elif (($p.id // "") | type) != "string" or (($p.id // "") | length) != 36 then "UUID غير صالح"
+     elif (($p.address // "") | type) != "string" or (($p.address // "") | length) == 0 or (($p.address // "") | length) > 253 then "عنوان السيرفر غير صالح"
+     elif ($p.port | type) != "number" or ($p.port < 1) or ($p.port > 65535) then "المنفذ Port غير صالح"
+     elif (["tcp","ws","grpc"] | index($p.network)) == null then "بروتوكول النقل غير مدعوم"
+     elif (["none","tls","reality"] | index($p.security)) == null then "نوع الحماية غير مدعوم"
+     else "" end
+   ' "$tmp" 2>/dev/null) || { rm -f "$tmp"; error 'خطأ في فحص بيانات VLESS'; }
+   [ -z "$reason" ] || { rm -f "$tmp"; error "$reason"; }
+   uuid=$(jq -r '.id' "$tmp")
+   printf '%s\n' "$uuid" | grep -Eq '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' || { rm -f "$tmp"; error 'UUID غير صالح'; }
+   # No interpolation of user-provided values into shell command arguments or scripts.
+   if [ -s /etc/zabour/profiles.json ]; then
+      jq -e 'type=="array"' /etc/zabour/profiles.json >/dev/null 2>&1 || { rm -f "$tmp"; error 'قائمة السيرفرات الحالية غير صالحة'; }
+   else echo '[]' > /etc/zabour/profiles.json; chmod 600 /etc/zabour/profiles.json; fi
+   list_tmp=$(mktemp /etc/zabour/list.XXXXXXXX) || { rm -f "$tmp"; error 'تعذر فتح قائمة السيرفرات'; }
+   jq -cs '.[0] as $old | .[1] as $new | ([$old[] | select(.id != $new.id or .address != $new.address or .port != $new.port)] + [$new]) | .[-30:]' /etc/zabour/profiles.json "$tmp" > "$list_tmp" || { rm -f "$tmp" "$list_tmp"; error 'تعذر حفظ قائمة السيرفرات'; }
+   chmod 600 "$tmp" "$list_tmp"
+   mv "$list_tmp" /etc/zabour/profiles.json
+   mv "$tmp" /etc/zabour/profile.json
+   echo '{"ok":true}';;
+ proxy)
+   enabled=$(arg enabled); transparent=$(arg transparent)
+   [ "$enabled" = true ] && enabled=1 || enabled=0
+   [ "$transparent" = true ] && transparent=1 || transparent=0
+   out=$(/usr/bin/zabour-ctl set vless_enabled "$enabled" 2>&1) || error "$out"
+   out=$(/usr/bin/zabour-ctl set transparent "$transparent" 2>&1) || error "$out"
+   out=$(/usr/bin/zabour-ctl proxy 2>&1) || error "$out"
+   echo '{"ok":true}';;
+ stop_proxy)
+   out=$(/usr/bin/zabour-ctl reset-proxy 2>&1) || error "$out"
+   echo '{"ok":true}';;
+ *) error 'Unknown action';;
+esac
