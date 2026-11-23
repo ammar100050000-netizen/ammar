@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "channel": "stable",
-  "version": "5.2.0",
+  "version": "5.3.0",
   "files": {
-    "api": "8f0ff161a434382b9d0a1c7fe3e1256e1eaffe73c7201110e67e020af3a68497",
-    "ui": "db61c5542de585f1c717ae1c8a9f969f8e8787314acdd4ee281a655847471cfa",
+    "api": "aea739cc4205030658ce864438deb8b8d0f709f11fb0011f6bb5592c1d408972",
+    "ui": "b67e77fe363249cd94d11f5fa77652eead183854372c6afb11737251589e2ba2",
     "ctl": "d13b4cd0f4d5327f674b8cd4a8eb2f22e46cef8ee6eacfdc9eebd8d8ad649079",
     "init": "b231ede7c974b24ba39268e095fbad4d18f1b66973fc5fb1b3886ef835fa841a",
     "menu": "b9e75a8441be9c7930a38b8951c8ce2b5c86b13ecffc5e6026253b1921c635c8",
-    "luci": "c00d57c75508ab8269edd94cf1f5a21fa5447a853180450b76414c2edc91de4b",
+    "luci": "04a5f28e82070cbe917533e826c1306ef220a68f552ba4d28e00af13eacff33c",
     "updater": "f6ea84806b5be35db9ba6330438e5f79143e86ec6fac4c3d5456010e477b7fe9"
   }
 }
