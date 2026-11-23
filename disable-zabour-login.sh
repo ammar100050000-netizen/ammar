@@ -22,7 +22,7 @@ if grep -q 'HTTP_X_ZABOUR_TOKEN' "$api"; then
   awk '
     index($0,"HTTP_X_ZABOUR_TOKEN") {
       print "# LAN-only access while login is temporarily disabled"
-      print "case \"\u0024{REMOTE_ADDR:-}\" in"
+      print "case \"${REMOTE_ADDR:-}\" in"
       print "  127.0.0.1|::1|192.168.1.*) : ;;"
       print "  *) error '\''Zabour is accessible only from the local LAN'\'' ;;"
       print "esac"
