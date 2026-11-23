@@ -1,0 +1,109 @@
+#!/bin/sh
+# Zabour online full-package updater. OpenWrt/BusyBox ash.
+# Fixed, allowlisted release files, sha256 checked before any installation.
+set -eu
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+umask 077
+REPO='https://raw.githubusercontent.com/ammar100050000-netizen/ammar/zabour-router-openwrt-v1'
+MANIFEST_URL="$REPO/releases/stable.json"
+VERSION_FILE=/etc/zabour/version
+KEYS='api ui ctl init menu luci updater'
+CURRENT=$(cat "$VERSION_FILE" 2>/dev/null || echo '4.0.0')
+json_error(){ jq -nc --arg err "$1" '{ok:false,error:$err}'; exit 1; }
+need(){ command -v "$1" >/dev/null 2>&1 || json_error "Missing command: $1"; }
+for cmd in wget sha256sum jq mktemp cp mv; do need "$cmd"; done
+[ "$(id -u)" -eq 0 ] || json_error 'Root permissions required'
+case "${1:-}" in check|apply) : ;; *) json_error 'Usage: zabour-update check|apply' ;; esac
+stage=$(mktemp -d /tmp/zabour-update.XXXXXX) || json_error 'Cannot create temp directory'
+trap 'rm -rf "$stage"' EXIT HUP INT TERM
+wget -qO "$stage/stable.json" --timeout=20 "$MANIFEST_URL" || json_error 'Unable to check release server'
+# Do not accept URLs or arbitrary paths supplied by the manifest. Only fixed release files.
+jq -e '.schema==1 and .channel=="stable" and (.version|type=="string" and test("^[0-9]+\\.[0-9]+\\.[0-9]+$")) and (.files|type=="object")' "$stage/stable.json" >/dev/null || json_error 'Invalid release manifest'
+latest=$(jq -r '.version' "$stage/stable.json")
+for key in $KEYS; do
+  hash=$(jq -r --arg key "$key" '.files[$key] // empty' "$stage/stable.json")
+  case "$hash" in *[!0-9a-f]*|'') json_error "Invalid release hash: $key" ;; esac
+  [ "${#hash}" -eq 64 ] || json_error "Invalid hash length: $key"
+done
+# Ensure a compromised or mistaken channel cannot downgrade silently.
+if [ "$CURRENT" != "$latest" ]; then
+  older=$(awk -v cur="$CURRENT" -v new="$latest" 'BEGIN{split(cur,c,".");split(new,n,".");for(i=1;i<=3;i++){if(n[i]+0>c[i]+0){print "no";exit}if(n[i]+0<c[i]+0){print "yes";exit}}print "no"}')
+  [ "$older" = no ] || json_error 'Refusing to downgrade installed version'
+fi
+if [ "${1:-}" = check ]; then
+  jq -nc --arg current "$CURRENT" --arg latest "$latest" '{ok:true,current:$current,latest:$latest,available:($current!=$latest)}'
+  exit 0
+fi
+if [ "$CURRENT" = "$latest" ]; then
+  jq -nc --arg current "$CURRENT" '{ok:true,current:$current,latest:$current,updated:false,message:"Already up to date"}'
+  exit 0
+fi
+base="$REPO/releases/v$latest"
+for key in $KEYS; do
+  wget -qO "$stage/$key" --timeout=30 "$base/$key" || json_error "Download failed: $key"
+  [ -s "$stage/$key" ] || json_error "Empty update component: $key"
+  hash=$(jq -r --arg key "$key" '.files[$key]' "$stage/stable.json")
+  printf '%s  %s\n' "$hash" "$stage/$key" | sha256sum -c - >/dev/null 2>&1 || json_error "SHA256 mismatch: $key"
+done
+for key in api ctl init updater; do sh -n "$stage/$key" || json_error "Invalid shell: $key"; done
+jq -e '."admin/services/zabour".action.type=="view"' "$stage/menu" >/dev/null || json_error 'Invalid LuCI menu'
+grep -Fq 'ZABOUR' "$stage/ui" || json_error 'UI does not look like Zabour'
+# CGI should parse and return JSON safely before any install.
+REMOTE_ADDR=192.168.1.2 REQUEST_METHOD=GET QUERY_STRING=version sh "$stage/api" > "$stage/cgiout" 2>/dev/null || true
+sed -n '/^{/,$p' "$stage/cgiout" | jq -e '.ok==true' >/dev/null 2>&1 || json_error 'API self-test failed'
+# The allowlist of exact destinations is not under remote control.
+mkdir -p /etc/zabour/backups
+chmod 700 /etc/zabour/backups
+backup=$(mktemp -d /etc/zabour/backups/update.XXXXXXXX) || json_error 'Cannot make backup'
+for key in $KEYS; do
+  case "$key" in
+    api) dest=/www/cgi-bin/zabour-api ;;
+    ui) dest=/www/zabour/index.html ;;
+    ctl) dest=/usr/bin/zabour-ctl ;;
+    init) dest=/etc/init.d/zabour ;;
+    menu) dest=/usr/share/luci/menu.d/luci-app-zabour.json ;;
+    luci) dest=/www/luci-static/resources/view/zabour/index.js ;;
+    updater) dest=/usr/bin/zabour-update ;;
+  esac
+  mkdir -p "$(dirname "$dest")"
+  if [ -e "$dest" ]; then cp -p "$dest" "$backup/$key" || json_error "Cannot backup $key"; else : > "$backup/$key.absent"; fi
+done
+[ -e /www/zabour/open.html ] && cp -p /www/zabour/open.html "$backup/open.html" || : > "$backup/open.html.absent"
+[ -e "$VERSION_FILE" ] && cp -p "$VERSION_FILE" "$backup/version" || : > "$backup/version.absent"
+# Write first to .tmp path then atomically rename, keeping script being executed intact.
+failed=0
+for key in $KEYS; do
+  case "$key" in
+    api) dest=/www/cgi-bin/zabour-api ; perm=755 ;;
+    ui) dest=/www/zabour/index.html ; perm=644 ;;
+    ctl) dest=/usr/bin/zabour-ctl ; perm=755 ;;
+    init) dest=/etc/init.d/zabour ; perm=755 ;;
+    menu) dest=/usr/share/luci/menu.d/luci-app-zabour.json ; perm=644 ;;
+    luci) dest=/www/luci-static/resources/view/zabour/index.js ; perm=644 ;;
+    updater) dest=/usr/bin/zabour-update ; perm=755 ;;
+  esac
+  if ! cp "$stage/$key" "$dest.new" || ! chmod "$perm" "$dest.new" || ! mv -f "$dest.new" "$dest"; then failed=1; break; fi
+done
+if [ "$failed" -eq 0 ] && cp "$stage/ui" /www/zabour/open.html.new && chmod 644 /www/zabour/open.html.new && mv -f /www/zabour/open.html.new /www/zabour/open.html && printf '%s\n' "$latest" > "$VERSION_FILE" && /etc/init.d/uhttpd restart >/dev/null 2>&1; then
+  rm -f /tmp/luci-indexcache /tmp/luci-indexcache.* 2>/dev/null || true
+  jq -nc --arg current "$CURRENT" --arg latest "$latest" --arg backup "$backup" '{ok:true,updated:true,previous:$current,latest:$latest,backup:$backup,message:"Update installed. Refresh the page."}'
+  exit 0
+fi
+# Any partially-applied release is rolled back to original files.
+for key in $KEYS; do
+  case "$key" in
+    api) dest=/www/cgi-bin/zabour-api ;;
+    ui) dest=/www/zabour/index.html ;;
+    ctl) dest=/usr/bin/zabour-ctl ;;
+    init) dest=/etc/init.d/zabour ;;
+    menu) dest=/usr/share/luci/menu.d/luci-app-zabour.json ;;
+    luci) dest=/www/luci-static/resources/view/zabour/index.js ;;
+    updater) dest=/usr/bin/zabour-update ;;
+  esac
+  if [ -e "$backup/$key" ]; then cp -p "$backup/$key" "$dest" || true; else [ ! -e "$backup/$key.absent" ] || rm -f "$dest"; fi
+  rm -f "$dest.new"
+done
+if [ -e "$backup/open.html" ]; then cp -p "$backup/open.html" /www/zabour/open.html; else rm -f /www/zabour/open.html; fi
+if [ -e "$backup/version" ]; then cp -p "$backup/version" "$VERSION_FILE"; else rm -f "$VERSION_FILE"; fi
+/etc/init.d/uhttpd restart >/dev/null 2>&1 || true
+json_error 'Update failed. Previous files restored.'
