@@ -90,6 +90,13 @@ case "$action" in
    (ls -1 /sys/class/net 2>/dev/null || true) | jq -R -s 'split("\n")|map(select(length>0))' > /tmp/zabour-device-list.$$
    jq -nc --slurpfile i /tmp/zabour-interface-list.$$ --slurpfile r /tmp/zabour-radio-list.$$ --slurpfile d /tmp/zabour-device-list.$$ '{ok:true,interfaces:$i[0],radios:$r[0],devices:$d[0]}'
    rm -f /tmp/zabour-interface-list.$$ /tmp/zabour-radio-list.$$ /tmp/zabour-device-list.$$;;
+ wifi_scan)
+   radio=$(arg radio)
+   case "$radio" in ''|*[!A-Za-z0-9_-]*) error 'Invalid radio';; esac
+   [ "$(uci -q get "wireless.$radio" || true)" = wifi-device ] || error 'Radio not found'
+   command -v iwinfo >/dev/null 2>&1 || error 'iwinfo not installed'
+   scan=$(iwinfo "$radio" scan 2>&1 | head -c 8000) || error 'Scan failed'
+   jq -nc --arg output "$scan" '{ok:true,scan:$output}';;
  devices)
    if [ -f /tmp/dhcp.leases ]; then
      awk '{print $3"\t"$2"\t"$4}' /tmp/dhcp.leases | jq -R -s '[split("\n")[] | select(length>0) | split("\t") | {ip:.[0],mac:.[1],hostname:.[2]}] | {ok:true,devices:.}'
