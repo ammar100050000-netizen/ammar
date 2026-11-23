@@ -131,8 +131,8 @@ case "$action" in
      elif ((.id // "")|type)!="string" or ((.id // "")|test("^[A-Fa-f0-9]{8}(-[A-Fa-f0-9]{4}){3}-[A-Fa-f0-9]{12}$")|not) then "UUID غير صالح"
      elif ((.address // "")|type)!="string" or ((.address // "")|length)==0 then "عنوان السيرفر مفقود"
      elif ((.port // 0)|type)!="number" or .port<1 or .port>65535 then "منفذ السيرفر غير صالح"
-     elif ((["tcp","ws","grpc"]|index(.network)) == null) then "نوع الاتصال غير مدعوم"
-     elif ((["none","tls","reality"]|index(.security)) == null) then "نوع الحماية غير مدعوم"
+     elif (.network as $n | (["tcp","ws","grpc"]|index($n)) == null) then "نوع الاتصال غير مدعوم"
+     elif (.security as $n | (["none","tls","reality"]|index($n)) == null) then "نوع الحماية غير مدعوم"
      else "" end
    ' "$tmp" 2>/dev/null) || { rm "$tmp"; error 'Invalid JSON profile'; }
    [ -z "$reason" ] || { rm "$tmp"; error "$reason"; }
