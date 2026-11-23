@@ -1,14 +1,14 @@
 {
   "schema": 1,
   "channel": "stable",
-  "version": "5.0.0",
+  "version": "5.1.0",
   "files": {
-    "api": "1d9282786658af9b61cf816f349a8e97d3758149e891f8356dcddfaf7fafd9d4",
-    "ui": "153a86399aa02e1eba0002d8dceabbb94718bf16a2b022c25a139b51f7f1ccce",
-    "ctl": "4a5d55102c04c1d8153ff179527fbeffad6acef228df9784a6245e7f5fb664dc",
+    "api": "ee0ee250e7a7dff805af5eb33dbd7845d0c79d715eb59d2da62c9a936ce4f040",
+    "ui": "dba2f51c5845007af3f92431e1ea9f2bc97572bbbefbe150d9671972a9ef1f14",
+    "ctl": "623df6959c6cf37fd0381578512a69ae26a56589c6722f14976b32c94f4d726e",
     "init": "b231ede7c974b24ba39268e095fbad4d18f1b66973fc5fb1b3886ef835fa841a",
     "menu": "b9e75a8441be9c7930a38b8951c8ce2b5c86b13ecffc5e6026253b1921c635c8",
-    "luci": "cb274019e4136306f85dbfa8445ddb618dc9225b261b1b0a821363f551f281a7",
+    "luci": "6de9c111a4a77598f15c9ddeb2c3d59b3dfca763094bb76bc133a17ec364899a",
     "updater": "00be2785d4767333ad38e05f693cc5087daaea6f2e47db6863b048c4dc7a2446"
   }
 }
