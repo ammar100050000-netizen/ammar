@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "channel": "stable",
+  "version": "5.0.0",
+  "files": {
+    "api": "1d9282786658af9b61cf816f349a8e97d3758149e891f8356dcddfaf7fafd9d4",
+    "ui": "153a86399aa02e1eba0002d8dceabbb94718bf16a2b022c25a139b51f7f1ccce",
+    "ctl": "4a5d55102c04c1d8153ff179527fbeffad6acef228df9784a6245e7f5fb664dc",
+    "init": "b231ede7c974b24ba39268e095fbad4d18f1b66973fc5fb1b3886ef835fa841a",
+    "menu": "b9e75a8441be9c7930a38b8951c8ce2b5c86b13ecffc5e6026253b1921c635c8",
+    "luci": "cb274019e4136306f85dbfa8445ddb618dc9225b261b1b0a821363f551f281a7",
+    "updater": "4e28933d770e9fcc1826c99e31534ce57562d4ca8c8001ea239e36aa589b10b3"
+  }
+}
